@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Data — Perpus SMK</title>
+  <script src="/admin/sidebar.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4B7FF2; --primary-soft: #eef3ff;
+      --accent: #B36FF2; --accent-soft: #f7f0ff;
+      --green: #10b981; --green-soft: #ecfdf5;
+      --orange: #f59e0b; --orange-soft: #fffbeb;
+      --red: #ef4444; --red-soft: #fef2f2;
+      --white: #fff; --gray: #f1f5f9;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+      --sidebar-w: 240px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gray); color:var(--text); min-height:100vh; }
+    .page-wrapper { display:flex; min-height:100vh; }
+    .main-area { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-width:0; }
+
+    /* TOPBAR */
+    .topbar { background:var(--white); border-bottom:1px solid var(--border); padding:1.2rem 2.5rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar-left h1 { font-size:1.15rem; font-weight:800; }
+    .topbar-left p  { font-size:0.75rem; color:var(--muted); margin-top:0.1rem; }
+
+    .content { padding:2rem 2.5rem 4rem; max-width:1000px; }
+
+    /* STEPPER */
+    .stepper { display:flex; align-items:center; gap:0; margin-bottom:2.5rem; background:var(--white); border:1px solid var(--border); border-radius:18px; padding:1.1rem 1.75rem; overflow-x:auto; }
+    .step { display:flex; align-items:center; gap:0.65rem; flex-shrink:0; }
+    .step-num { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:800; border:2.5px solid var(--border); background:var(--gray); color:var(--muted); transition:0.25s; flex-shrink:0; }
+    .step.active .step-num { background:linear-gradient(135deg,var(--accent),var(--primary)); color:white; border:none; box-shadow:0 4px 12px rgba(107,115,230,0.35); }
+    .step.done .step-num   { background:var(--green); color:white; border:none; }
+    .step-label { font-size:0.78rem; font-weight:700; color:var(--muted); white-space:nowrap; }
+    .step.active .step-label { color:var(--primary); }
+    .step.done .step-label   { color:var(--green); }
+    .step-line { flex:1; height:2px; background:var(--border); margin:0 0.75rem; min-width:30px; transition:0.25s; }
+    .step-line.done { background:var(--green); }
+
+    /* PANELS */
+    .panel { background:var(--white); border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-bottom:1.25rem; display:none; animation:fadeUp 0.3s ease; }
+    .panel.active { display:block; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+    .panel-head { padding:1.25rem 1.75rem; border-bottom:1px solid var(--border); }
+    .panel-head h2  { font-size:0.95rem; font-weight:800; }
+    .panel-head p   { font-size:0.78rem; color:var(--muted); margin-top:0.25rem; }
+    .panel-body { padding:1.75rem; }
+
+    /* DROP ZONE */
+    .drop-zone { border:2.5px dashed var(--border); border-radius:16px; padding:3rem; text-align:center; cursor:pointer; transition:0.2s; position:relative; }
+    .drop-zone:hover, .drop-zone.drag { border-color:var(--primary); background:var(--primary-soft); }
+    .drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+    .drop-icon  { font-size:3rem; margin-bottom:1rem; display:block; }
+    .drop-title { font-size:1rem; font-weight:800; margin-bottom:0.35rem; }
+    .drop-sub   { font-size:0.8rem; color:var(--muted); }
+    .file-types { display:flex; gap:0.5rem; justify-content:center; margin-top:1rem; }
+    .ft-badge   { background:var(--gray); border:1px solid var(--border); border-radius:6px; padding:0.2rem 0.55rem; font-size:0.7rem; font-weight:700; color:var(--muted); }
+
+    /* FILE INFO */
+    .file-info { display:none; align-items:center; gap:1rem; background:var(--green-soft); border:1px solid #a7f3d0; border-radius:12px; padding:1rem 1.25rem; margin-top:1rem; }
+    .file-info.show { display:flex; }
+    .fi-icon { font-size:1.75rem; flex-shrink:0; }
+    .fi-name { font-weight:800; font-size:0.9rem; }
+    .fi-meta { font-size:0.75rem; color:var(--muted); margin-top:0.1rem; }
+    .fi-clear { margin-left:auto; background:none; border:1.5px solid #a7f3d0; border-radius:8px; padding:0.35rem 0.7rem; font-size:0.75rem; font-weight:700; cursor:pointer; color:var(--green); }
+
+    /* TABLE SELECTOR */
+    .table-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:0.75rem; margin-bottom:1.25rem; }
+    .table-option { border:2px solid var(--border); border-radius:14px; padding:1.1rem; cursor:pointer; text-align:center; transition:0.18s; }
+    .table-option:hover  { border-color:var(--primary); background:var(--primary-soft); }
+    .table-option.sel    { border-color:var(--primary); background:var(--primary-soft); }
+    .table-option .to-icon  { font-size:1.75rem; margin-bottom:0.5rem; display:block; }
+    .table-option .to-name  { font-size:0.82rem; font-weight:800; }
+    .table-option .to-desc  { font-size:0.68rem; color:var(--muted); margin-top:0.2rem; }
+
+    /* MAPPING */
+    .mapping-grid { display:grid; gap:0.75rem; }
+    .map-row { display:grid; grid-template-columns:1fr 28px 1fr; align-items:center; gap:0.75rem; background:var(--gray); border-radius:12px; padding:0.85rem 1rem; }
+    .map-label { font-size:0.8rem; font-weight:700; }
+    .map-sub   { font-size:0.68rem; color:var(--muted); margin-top:0.1rem; }
+    .map-arrow { text-align:center; font-size:1rem; color:var(--muted); }
+    .map-select { border:1.5px solid var(--border); border-radius:8px; padding:0.5rem 0.7rem; font-family:inherit; font-size:0.8rem; outline:none; background:var(--white); cursor:pointer; width:100%; }
+    .map-select:focus { border-color:var(--primary); }
+    .map-required { font-size:0.65rem; color:var(--red); font-weight:700; margin-top:0.15rem; }
+
+    /* PREVIEW TABLE */
+    .preview-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:12px; max-height:360px; overflow-y:auto; }
+    table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    thead th { padding:0.65rem 1rem; background:#f8faff; text-align:left; font-size:0.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); position:sticky; top:0; white-space:nowrap; }
+    tbody td { padding:0.65rem 1rem; border-bottom:1px solid #f1f5f9; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover { background:#fafbff; }
+    .row-ok  { border-left:3px solid var(--green); }
+    .row-err { border-left:3px solid var(--red); background:#fff8f8; }
+    .err-tag { font-size:0.65rem; color:var(--red); font-weight:700; }
+
+    /* SUMMARY */
+    .import-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+    .sum-card { border-radius:14px; padding:1.1rem 1.25rem; text-align:center; }
+    .sum-val  { font-size:1.75rem; font-weight:800; }
+    .sum-lbl  { font-size:0.72rem; font-weight:700; margin-top:0.2rem; }
+
+    /* PROGRESS */
+    .progress-wrap { background:var(--gray); border-radius:20px; height:10px; overflow:hidden; margin:1rem 0; }
+    .progress-bar  { height:100%; background:linear-gradient(90deg,var(--accent),var(--primary)); border-radius:20px; width:0%; transition:width 0.3s; }
+
+    /* LOG */
+    .log-box { background:#0f172a; border-radius:14px; padding:1.25rem; max-height:280px; overflow-y:auto; font-family:monospace; font-size:0.78rem; line-height:1.7; }
+    .log-box .log-ok  { color:#4ade80; }
+    .log-box .log-err { color:#f87171; }
+    .log-box .log-inf { color:#94a3b8; }
+
+    /* BTN */
+    .btn { display:inline-flex; align-items:center; gap:0.45rem; border:none; padding:0.7rem 1.3rem; border-radius:11px; font-weight:700; font-size:0.85rem; cursor:pointer; font-family:inherit; transition:0.18s; }
+    .btn-primary { background:linear-gradient(135deg,var(--accent),var(--primary)); color:white; box-shadow:0 4px 14px rgba(107,115,230,0.3); }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(107,115,230,0.35); }
+    .btn-primary:disabled { opacity:0.5; transform:none; cursor:not-allowed; }
+    .btn-outline { background:var(--white); border:1.5px solid var(--border); color:var(--muted); }
+    .btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-green { background:var(--green); color:white; box-shadow:0 4px 12px rgba(16,185,129,0.3); }
+    .btn-green:hover { transform:translateY(-1px); }
+    .step-nav { display:flex; gap:0.75rem; margin-top:1.5rem; justify-content:flex-end; }
+
+    /* TIPS */
+    .tip-box { display:flex; gap:0.75rem; background:var(--orange-soft); border:1px solid #fde68a; border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.5rem; }
+    .tip-box .tip-icon { font-size:1.2rem; flex-shrink:0; }
+    .tip-box .tip-text { font-size:0.8rem; color:#92400e; line-height:1.6; }
+    .tip-box .tip-text b { font-weight:800; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:2rem; right:2rem; background:#1e293b; color:white; padding:0.85rem 1.25rem; border-radius:12px; font-size:0.82rem; font-weight:600; z-index:9999; transform:translateY(80px); opacity:0; transition:0.3s; }
+    .toast.show    { transform:translateY(0); opacity:1; }
+    .toast.success { border-left:4px solid var(--green); }
+    .toast.error   { border-left:4px solid var(--red); }
+
+    @media (max-width:768px) {
+      .main-area { margin-left:0; }
+      .content   { padding:1.25rem 1rem 3rem; }
+      .topbar    { padding:1rem; padding-left:4rem; }
+      .import-summary { grid-template-columns:1fr 1fr; }
+      .map-row { grid-template-columns:1fr 20px 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <admin-sidebar active="import"></admin-sidebar>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>📥 Import Data</h1>
+        <p>Upload file Excel atau CSV lalu import ke Firestore</p>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- STEPPER -->
+      <div class="stepper">
+        <div class="step active" id="s1">
+          <div class="step-num" id="sn1">1</div>
+          <div class="step-label">Upload File</div>
+        </div>
+        <div class="step-line" id="sl1"></div>
+        <div class="step" id="s2">
+          <div class="step-num" id="sn2">2</div>
+          <div class="step-label">Pilih Tabel</div>
+        </div>
+        <div class="step-line" id="sl2"></div>
+        <div class="step" id="s3">
+          <div class="step-num" id="sn3">3</div>
+          <div class="step-label">Mapping Kolom</div>
+        </div>
+        <div class="step-line" id="sl3"></div>
+        <div class="step" id="s4">
+          <div class="step-num" id="sn4">4</div>
+          <div class="step-label">Preview Data</div>
+        </div>
+        <div class="step-line" id="sl4"></div>
+        <div class="step" id="s5">
+          <div class="step-num" id="sn5">5</div>
+          <div class="step-label">Import</div>
+        </div>
+      </div>
+
+      <!-- STEP 1: UPLOAD -->
+      <div class="panel active" id="panel1">
+        <div class="panel-head">
+          <h2>📁 Upload File Excel atau CSV</h2>
+          <p>Seret file ke sini atau klik untuk memilih</p>
+        </div>
+        <div class="panel-body">
+          <div class="tip-box">
+            <span class="tip-icon">💡</span>
+            <div class="tip-text">
+              <b>Tips:</b> Pastikan baris pertama file kamu adalah <b>header kolom</b> (nama kolom).
+              Format yang didukung: <b>.xlsx, .xls, .csv</b>. Ukuran maksimal 10MB.
+            </div>
+          </div>
+
+          <div class="drop-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])">
+            <span class="drop-icon">📊</span>
+            <div class="drop-title">Seret file di sini atau klik untuk upload</div>
+            <div class="drop-sub">Mendukung file Excel (.xlsx, .xls) dan CSV (.csv)</div>
+            <div class="file-types">
+              <span class="ft-badge">📗 .xlsx</span>
+              <span class="ft-badge">📘 .xls</span>
+              <span class="ft-badge">📄 .csv</span>
+            </div>
+          </div>
+
+          <div class="file-info" id="fileInfo">
+            <span class="fi-icon">📊</span>
+            <div>
+              <div class="fi-name" id="fiName">—</div>
+              <div class="fi-meta" id="fiMeta">—</div>
+            </div>
+            <button class="fi-clear" onclick="clearFile()">✕ Ganti</button>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn-primary" id="btnStep1" onclick="goStep(2)" disabled>
+              Pilih Tabel →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: PILIH TABEL -->
+      <div class="panel" id="panel2">
+        <div class="panel-head">
+          <h2>🗄️ Pilih Tabel Firestore</h2>
+          <p>Data akan diimport ke koleksi mana?</p>
+        </div>
+        <div class="panel-body">
+          <div class="table-grid">
+            <div class="table-option" onclick="selectTable('buku')" id="tbl-buku">
+              <span class="to-icon">📚</span>
+              <div class="to-name">Buku</div>
+              <div class="to-desc">Koleksi perpustakaan</div>
+            </div>
+            <div class="table-option" onclick="selectTable('siswa')" id="tbl-siswa">
+              <span class="to-icon">🎓</span>
+              <div class="to-name">Siswa</div>
+              <div class="to-desc">Data akun siswa</div>
+            </div>
+            <div class="table-option" onclick="selectTable('guru')" id="tbl-guru">
+              <span class="to-icon">👨‍🏫</span>
+              <div class="to-name">Guru</div>
+              <div class="to-desc">Data akun guru</div>
+            </div>
+            <div class="table-option" onclick="selectTable('peminjaman')" id="tbl-peminjaman">
+              <span class="to-icon">📋</span>
+              <div class="to-name">Peminjaman</div>
+              <div class="to-desc">Riwayat pinjam buku</div>
+            </div>
+            <div class="table-option" onclick="selectTable('custom')" id="tbl-custom" style="border-style:dashed;">
+              <span class="to-icon">✏️</span>
+              <div class="to-name">Custom</div>
+              <div class="to-desc">Nama koleksi sendiri</div>
+            </div>
+          </div>
+
+          <div id="customCollInput" style="display:none; margin-bottom:1rem;">
+            <label style="font-size:0.75rem;font-weight:700;color:var(--muted);display:block;margin-bottom:0.35rem;">NAMA KOLEKSI</label>
+            <input type="text" id="customCollName" placeholder="Contoh: kunjungan"
+              style="border:1.5px solid var(--border);border-radius:10px;padding:0.7rem;font-family:inherit;font-size:0.85rem;outline:none;width:100%;max-width:300px;background:var(--gray);">
+          </div>
+
+          <div id="idFieldWrap" style="display:none; background:var(--orange-soft); border:1px solid #fde68a; border-radius:12px; padding:1rem 1.25rem; margin-bottom:1rem;">
+            <div style="font-size:0.78rem; font-weight:700; color:#92400e; margin-bottom:0.5rem;">🔑 Kolom mana yang jadi Document ID?</div>
+            <select id="idFieldSel" style="border:1.5px solid #fde68a;border-radius:8px;padding:0.5rem 0.75rem;font-family:inherit;font-size:0.82rem;background:white;outline:none;cursor:pointer;">
+              <option value="__auto__">Otomatis (Firebase generate)</option>
+            </select>
+            <div style="font-size:0.7rem;color:#b45309;margin-top:0.4rem;">Pilih kolom yang nilainya unik, misal NO atau NIS. Kalau tidak yakin, biarkan Otomatis.</div>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn-outline" onclick="goStep(1)">← Kembali</button>
+            <button class="btn btn-primary" id="btnStep2" onclick="goStep(3)" disabled>
+              Mapping Kolom →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: MAPPING -->
+      <div class="panel" id="panel3">
+        <div class="panel-head">
+          <h2>🔗 Mapping Kolom</h2>
+          <p>Cocokkan kolom dari file kamu ke field Firestore</p>
+        </div>
+        <div class="panel-body">
+          <div class="tip-box">
+            <span class="tip-icon">ℹ️</span>
+            <div class="tip-text">
+              Kolom di sebelah kiri adalah <b>kolom dari file kamu</b>.
+              Pilih nama field Firestore di sebelah kanan. Kolom yang tidak diperlukan bisa di-skip.
+            </div>
+          </div>
+          <div class="mapping-grid" id="mappingGrid"></div>
+          <div class="step-nav">
+            <button class="btn btn-outline" onclick="goStep(2)">← Kembali</button>
+            <button class="btn btn-primary" onclick="buildPreview(); goStep(4)">Preview Data →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4: PREVIEW -->
+      <div class="panel" id="panel4">
+        <div class="panel-head">
+          <h2>👁️ Preview Data</h2>
+          <p>Cek data sebelum diimport. Baris merah = ada masalah.</p>
+        </div>
+        <div class="panel-body">
+          <div class="import-summary" id="importSummary"></div>
+          <div class="preview-wrap">
+            <table>
+              <thead id="previewHead"></thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+          <div class="step-nav">
+            <button class="btn btn-outline" onclick="goStep(3)">← Kembali</button>
+            <button class="btn btn-primary" onclick="goStep(5)">Mulai Import →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5: IMPORT -->
+      <div class="panel" id="panel5">
+        <div class="panel-head">
+          <h2>🚀 Proses Import</h2>
+          <p>Data sedang diupload ke Firestore</p>
+        </div>
+        <div class="panel-body">
+          <div class="import-summary" id="importSummary2"></div>
+          <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-bottom:1rem;">
+            <span id="progressText">Siap diimport</span>
+            <span id="progressPct">0%</span>
+          </div>
+          <div class="log-box" id="logBox">
+            <span class="log-inf">Tekan tombol "Mulai Import" untuk memulai...</span>
+          </div>
+          <div class="step-nav" style="justify-content:space-between;">
+            <button class="btn btn-outline" id="btnBackFromImport" onclick="goStep(4)">← Kembali</button>
+            <div style="display:flex;gap:0.75rem;">
+              <button class="btn btn-primary" id="btnStartImport" onclick="startImport()">🚀 Mulai Import</button>
+              <button class="btn btn-green" id="btnDone" style="display:none;" onclick="resetAll()">✅ Import Lagi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { db } from "../firebase.js";
+  import {
+    collection, doc, setDoc, addDoc, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // ── State ──
+  let rawData      = [];   // array of row objects from Excel
+  let headers      = [];   // column headers from file
+  let selectedColl = "";
+  let idField      = "__auto__";
+  let mappedRows   = [];   // final mapped data ready to import
+  let currentStep  = 1;
+
+  // ── STEP navigation ──
+  window.goStep = (n) => {
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById(`panel${i}`).classList.toggle("active", i === n);
+      const s = document.getElementById(`s${i}`);
+      s.classList.remove("active","done");
+      if (i < n)  s.classList.add("done");
+      if (i === n) s.classList.add("active");
+      if (i < n)  document.getElementById(`sn${i}`).textContent = "✓";
+      else        document.getElementById(`sn${i}`).textContent = i;
+      if (i < 5)  document.getElementById(`sl${i}`).classList.toggle("done", i < n);
+    }
+    currentStep = n;
+    if (n === 3) buildMappingUI();
+    if (n === 5) setupImportPanel();
+  };
+
+  // ── DRAG & DROP ──
+  const dz = document.getElementById("dropZone");
+  dz.addEventListener("dragover",  (e) => { e.preventDefault(); dz.classList.add("drag"); });
+  dz.addEventListener("dragleave", ()  => dz.classList.remove("drag"));
+  dz.addEventListener("drop", (e) => {
+    e.preventDefault(); dz.classList.remove("drag");
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  // ── HANDLE FILE ──
+  window.handleFile = (file) => {
+    if (!file) return;
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["xlsx","xls","csv"].includes(ext)) {
+      showToast("❌ Format file tidak didukung!", "error"); return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb   = XLSX.read(e.target.result, { type:"binary" });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        if (json.length === 0) { showToast("❌ File kosong atau format tidak valid!", "error"); return; }
+        rawData = json;
+        headers = Object.keys(json[0]);
+
+        // Show file info
+        document.getElementById("fileInfo").classList.add("show");
+        document.getElementById("fiName").textContent = file.name;
+        document.getElementById("fiMeta").textContent =
+          `${json.length} baris • ${headers.length} kolom • ${(file.size/1024).toFixed(1)} KB`;
+        document.getElementById("btnStep1").disabled = false;
+        document.getElementById("dropZone").style.display = "none";
+
+        // Populate ID field selector
+        const sel = document.getElementById("idFieldSel");
+        sel.innerHTML = `<option value="__auto__">Otomatis (Firebase generate)</option>` +
+          headers.map(h => `<option value="${h}">${h}</option>`).join("");
+
+        showToast(`✅ File dibaca! ${json.length} baris ditemukan.`);
+      } catch (err) {
+        showToast("❌ Gagal membaca file: " + err.message, "error");
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  window.clearFile = () => {
+    rawData = []; headers = [];
+    document.getElementById("fileInfo").classList.remove("show");
+    document.getElementById("dropZone").style.display = "block";
+    document.getElementById("btnStep1").disabled = true;
+    document.getElementById("fileInput").value = "";
+  };
+
+  // ── SELECT TABLE ──
+  window.selectTable = (name) => {
+    document.querySelectorAll(".table-option").forEach(el => el.classList.remove("sel"));
+    document.getElementById(`tbl-${name}`).classList.add("sel");
+    selectedColl = name === "custom" ? "" : name;
+    document.getElementById("customCollInput").style.display = name === "custom" ? "block" : "none";
+    document.getElementById("idFieldWrap").style.display = "block";
+    document.getElementById("btnStep2").disabled = false;
+    if (name !== "custom") {
+      // Auto-suggest ID field
+      const guesses = { buku:["NO.","NO","no","id"], siswa:["NIS","nis"], guru:["NIP","ID","id"], peminjaman:["id"] };
+      const g = guesses[name] || [];
+      const found = g.find(f => headers.includes(f));
+      if (found) document.getElementById("idFieldSel").value = found;
+    }
+  };
+
+  // ── MAPPING UI ──
+  const firestoreFields = {
+    buku:      [
+      { key:"judul",       label:"Judul Buku",    req:true  },
+      { key:"pengarang",   label:"Pengarang",      req:false },
+      { key:"penerbit",    label:"Penerbit",       req:false },
+      { key:"tahun_terbit",label:"Tahun Terbit",   req:false },
+      { key:"stok",        label:"Stok / Jumlah",  req:false },
+      { key:"isbn",        label:"ISBN",           req:false },
+      { key:"sumber",      label:"Sumber",         req:false },
+      { key:"no_urut",     label:"No. Urut",       req:false },
+    ],
+    siswa:     [
+      { key:"nama",     label:"Nama",     req:true  },
+      { key:"password", label:"Password", req:false },
+      { key:"kelas",    label:"Kelas",    req:false },
+      { key:"status",   label:"Status",   req:false },
+    ],
+    guru:      [
+      { key:"nama",     label:"Nama",     req:true  },
+      { key:"password", label:"Password", req:false },
+      { key:"status",   label:"Status",   req:false },
+    ],
+    peminjaman:[
+      { key:"siswa_id",   label:"ID Siswa",       req:true  },
+      { key:"nama",       label:"Nama Siswa",      req:false },
+      { key:"judul",      label:"Judul Buku",      req:false },
+      { key:"tgl_pinjam", label:"Tgl Pinjam",      req:false },
+      { key:"tgl_kembali",label:"Batas Kembali",   req:false },
+      { key:"status",     label:"Status",          req:false },
+      { key:"denda",      label:"Denda",           req:false },
+    ],
+  };
+
+  function buildMappingUI() {
+    const coll   = selectedColl || document.getElementById("customCollName")?.value || "custom";
+    idField      = document.getElementById("idFieldSel").value;
+    const fields = firestoreFields[coll] || headers.map(h => ({ key: h.toLowerCase().replace(/\s+/g,"_"), label:h, req:false }));
+    const opts   = `<option value="__skip__">— Skip / Tidak Dipakai —</option>` +
+      headers.map(h => `<option value="${h}">${h}</option>`).join("");
+
+    document.getElementById("mappingGrid").innerHTML = fields.map(f => {
+      // auto-guess match
+      const guess = headers.find(h =>
+        h.toLowerCase().includes(f.key.replace("_"," ")) ||
+        h.toLowerCase() === f.key ||
+        h.toLowerCase().replace(/\s/g,"_") === f.key
+      ) || "__skip__";
+
+      return `<div class="map-row">
+        <div>
+          <div class="map-label">${f.label}</div>
+          <div class="map-sub">field: <code>${f.key}</code></div>
+          ${f.req ? '<div class="map-required">★ Wajib</div>' : ""}
+        </div>
+        <div class="map-arrow">→</div>
+        <select class="map-select" data-field="${f.key}" data-type="${getFieldType(f.key)}">
+          ${opts}
+        </select>
+      </div>`;
+    }).join("");
+
+    // Apply auto-guesses
+    fields.forEach(f => {
+      const sel   = document.querySelector(`[data-field="${f.key}"]`);
+      const guess = headers.find(h =>
+        h.toLowerCase().replace(/[\s.]/g,"") === f.key.replace(/_/g,"") ||
+        h.toLowerCase().includes(f.key.replace(/_/g," ")) ||
+        h.toLowerCase().replace(/\s+/g,"_") === f.key
+      );
+      if (guess && sel) sel.value = guess;
+    });
+  }
+
+  function getFieldType(key) {
+    const nums = ["stok","denda","no_urut","jumlah"];
+    return nums.some(n => key.includes(n)) ? "number" : "string";
+  }
+
+  // ── BUILD PREVIEW ──
+  window.buildPreview = () => {
+    const coll   = selectedColl || document.getElementById("customCollName")?.value || "custom";
+    idField      = document.getElementById("idFieldSel").value;
+    const selects = document.querySelectorAll(".map-select");
+    const mapping = {};
+    selects.forEach(s => {
+      if (s.value !== "__skip__") mapping[s.dataset.field] = { col: s.value, type: s.dataset.type };
+    });
+
+    mappedRows = rawData.map((row, i) => {
+      const out    = {};
+      const errors = [];
+      for (const [field, cfg] of Object.entries(mapping)) {
+        let val = row[cfg.col] ?? "";
+        if (cfg.type === "number") {
+          val = Number(val);
+          if (isNaN(val)) { errors.push(`${field} bukan angka`); val = 0; }
+        } else {
+          val = String(val).trim();
+        }
+        out[field] = val;
+      }
+      // ID
+      const docId = idField === "__auto__" ? null : String(row[idField] || i+1);
+      return { _docId: docId, _row: i+2, _errors: errors, ...out };
+    });
+
+    // Preview head
+    const fields = Object.keys(mapping);
+    document.getElementById("previewHead").innerHTML =
+      `<tr><th>#</th>${idField !== "__auto__" ? "<th>Document ID</th>" : ""}${fields.map(f=>`<th>${f}</th>`).join("")}<th>Status</th></tr>`;
+
+    // Preview body (show max 100 rows)
+    const preview = mappedRows.slice(0, 100);
+    document.getElementById("previewBody").innerHTML = preview.map(r => {
+      const ok = r._errors.length === 0;
+      return `<tr class="${ok ? "row-ok" : "row-err"}">
+        <td style="color:var(--muted);">${r._row}</td>
+        ${idField !== "__auto__" ? `<td><code style="font-size:0.75rem;color:var(--primary);">${r._docId||"—"}</code></td>` : ""}
+        ${fields.map(f => `<td>${r[f] ?? "—"}</td>`).join("")}
+        <td>${ok ? '<span style="color:var(--green);font-size:0.75rem;font-weight:700;">✅ OK</span>' : `<span class="err-tag">⚠️ ${r._errors.join(", ")}</span>`}</td>
+      </tr>`;
+    }).join("");
+
+    // Summary
+    const errCount  = mappedRows.filter(r => r._errors.length > 0).length;
+    const okCount   = mappedRows.length - errCount;
+    const summaryHTML = `
+      <div class="sum-card" style="background:var(--primary-soft);">
+        <div class="sum-val" style="color:var(--primary);">${mappedRows.length}</div>
+        <div class="sum-lbl" style="color:var(--primary);">Total Baris</div>
+      </div>
+      <div class="sum-card" style="background:var(--green-soft);">
+        <div class="sum-val" style="color:var(--green);">${okCount}</div>
+        <div class="sum-lbl" style="color:var(--green);">Siap Import</div>
+      </div>
+      <div class="sum-card" style="background:var(--red-soft);">
+        <div class="sum-val" style="color:var(--red);">${errCount}</div>
+        <div class="sum-lbl" style="color:var(--red);">Ada Masalah</div>
+      </div>`;
+    document.getElementById("importSummary").innerHTML  = summaryHTML;
+    document.getElementById("importSummary2").innerHTML = summaryHTML;
+  };
+
+  // ── SETUP IMPORT PANEL ──
+  function setupImportPanel() {
+    document.getElementById("progressBar").style.width = "0%";
+    document.getElementById("progressText").textContent = "Siap diimport";
+    document.getElementById("progressPct").textContent  = "0%";
+    document.getElementById("logBox").innerHTML = `<span class="log-inf">Tekan tombol "Mulai Import" untuk memulai...</span>`;
+    document.getElementById("btnStartImport").style.display = "inline-flex";
+    document.getElementById("btnDone").style.display        = "none";
+    document.getElementById("btnBackFromImport").disabled   = false;
+  }
+
+  // ── START IMPORT ──
+  window.startImport = async () => {
+    const coll = selectedColl || document.getElementById("customCollName")?.value?.trim();
+    if (!coll) { showToast("❌ Nama koleksi belum dipilih!", "error"); return; }
+
+    const btn  = document.getElementById("btnStartImport");
+    btn.disabled = true;
+    document.getElementById("btnBackFromImport").disabled = true;
+
+    const log   = document.getElementById("logBox");
+    const bar   = document.getElementById("progressBar");
+    const pText = document.getElementById("progressText");
+    const pPct  = document.getElementById("progressPct");
+    log.innerHTML = "";
+
+    let ok = 0, fail = 0;
+    const total = mappedRows.length;
+
+    // Import in batches of 499 (Firestore limit)
+    const BATCH_SIZE = 499;
+    const toImport   = [...mappedRows];
+
+    const addLog = (msg, type="ok") => {
+      log.innerHTML += `<span class="log-${type}">${msg}</span>\n`;
+      log.scrollTop  = log.scrollHeight;
+    };
+
+    addLog(`📦 Koleksi: ${coll} | Total: ${total} baris`, "inf");
+    addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, "inf");
+
+    for (let i = 0; i < toImport.length; i += BATCH_SIZE) {
+      const chunk = toImport.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+
+      chunk.forEach(row => {
+        const { _docId, _row, _errors, ...data } = row;
+        const ref = _docId
+          ? doc(db, coll, _docId)
+          : doc(collection(db, coll));
+        batch.set(ref, data);
+      });
+
+      try {
+        await batch.commit();
+        ok += chunk.length;
+        chunk.forEach(r => addLog(`✅ Baris ${r._row}${r._docId ? ` [ID: ${r._docId}]` : ""} — OK`));
+      } catch (err) {
+        fail += chunk.length;
+        addLog(`❌ Batch ${Math.floor(i/BATCH_SIZE)+1} gagal: ${err.message}`, "err");
+      }
+
+      const pct = Math.round(((i + chunk.length) / total) * 100);
+      bar.style.width    = pct + "%";
+      pPct.textContent   = pct + "%";
+      pText.textContent  = `${Math.min(i+BATCH_SIZE, total)} dari ${total} diproses...`;
+    }
+
+    addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, "inf");
+    addLog(`🎉 Selesai! ✅ ${ok} berhasil | ❌ ${fail} gagal`, fail > 0 ? "err" : "ok");
+    bar.style.width   = "100%";
+    pPct.textContent  = "100%";
+    pText.textContent = `Import selesai — ${ok} dari ${total} berhasil`;
+
+    btn.style.display   = "none";
+    document.getElementById("btnDone").style.display = "inline-flex";
+    showToast(fail === 0 ? `✅ ${ok} data berhasil diimport!` : `⚠️ ${ok} berhasil, ${fail} gagal`, fail > 0 ? "error" : "success");
+  };
+
+  // ── RESET ──
+  window.resetAll = () => {
+    rawData = []; headers = []; selectedColl = ""; mappedRows = [];
+    clearFile();
+    document.querySelectorAll(".table-option").forEach(el => el.classList.remove("sel"));
+    document.getElementById("idFieldWrap").style.display = "none";
+    document.getElementById("btnStep2").disabled = true;
+    goStep(1);
+  };
+
+  // ── TOAST ──
+  window.showToast = (msg, type="success") => {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = `toast ${type} show`;
+    setTimeout(() => t.classList.remove("show"), 3500);
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat — Perpus SMK</title>
+  <script src="../navbar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4B7FF2; --primary-soft: #eef3ff; --accent: #B36FF2; --accent-soft: #f7f0ff;
+      --green: #10b981; --green-soft: #ecfdf5; --orange: #f59e0b; --orange-soft: #fffbeb;
+      --red: #ef4444; --red-soft: #fef2f2; --white: #ffffff; --gray: #f1f5f9;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+
+    .main { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      border-radius: 20px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    .page-header::after {
+      content: '';
+      position: absolute;
+      bottom: -50px; left: 30px;
+      width: 120px; height: 120px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+    .page-header h1 { font-size: 1.4rem; font-weight: 800; color: white; position: relative; }
+    .page-header p  { font-size: 0.82rem; color: rgba(255,255,255,0.75); margin-top: 0.25rem; position: relative; }
+
+    /* ── STATS ROW ── */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.1rem 1.25rem;
+      display: flex; align-items: center; gap: 0.9rem;
+    }
+    .stat-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
+    .stat-icon.blue  { background: var(--primary-soft); }
+    .stat-icon.green { background: var(--green-soft); }
+    .stat-icon.orange{ background: var(--orange-soft); }
+    .stat-val { font-size: 1.35rem; font-weight: 800; line-height: 1; }
+    .stat-lbl { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-top: 0.2rem; }
+
+    /* ── TABS ── */
+    .tab-bar {
+      display: flex; gap: 0.5rem;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 14px; padding: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .tab-btn {
+      flex: 1; padding: 0.65rem; border-radius: 10px; border: none;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; color: var(--muted); background: transparent;
+      transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .tab-btn.active { background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; box-shadow: 0 4px 12px rgba(107,115,230,0.3); }
+    .tab-btn .badge {
+      background: rgba(255,255,255,0.25); color: white;
+      font-size: 0.7rem; font-weight: 800; padding: 0.1rem 0.45rem;
+      border-radius: 99px; line-height: 1.4;
+    }
+    .tab-btn:not(.active) .badge { background: var(--border); color: var(--muted); }
+
+    /* ── FILTER BAR ── */
+    .filter-bar { display: flex; gap: 0.6rem; margin-bottom: 1.1rem; align-items: center; }
+    .filter-select {
+      border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 0.55rem 0.85rem; font-family: inherit; font-size: 0.8rem;
+      background: var(--white); outline: none; color: var(--text); cursor: pointer;
+    }
+    .filter-select:focus { border-color: var(--primary); }
+
+    /* ── CARD ── */
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; margin-bottom: 1rem; }
+
+    /* ── LIST ITEMS — PEMINJAMAN ── */
+    .pinjam-item {
+      display: flex; align-items: flex-start; gap: 1rem;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background 0.15s; animation: fadeIn 0.3s ease both;
+    }
+    .pinjam-item:last-child { border-bottom: none; }
+    .pinjam-item:hover { background: #fafbff; }
+
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+    .book-cover {
+      width: 44px; height: 58px; border-radius: 8px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; box-shadow: 2px 3px 8px rgba(107,115,230,0.25);
+    }
+    .pinjam-info { flex: 1; min-width: 0; }
+    .pinjam-judul { font-size: 0.88rem; font-weight: 800; margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pinjam-meta  { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .pinjam-dates { display: flex; gap: 0.85rem; flex-wrap: wrap; }
+    .date-chip {
+      display: flex; align-items: center; gap: 0.3rem;
+      font-size: 0.72rem; color: var(--muted); font-weight: 600;
+    }
+    .pinjam-status { flex-shrink: 0; text-align: right; }
+    .status-badge {
+      display: inline-block; padding: 0.28rem 0.75rem;
+      border-radius: 99px; font-size: 0.72rem; font-weight: 800;
+    }
+    .status-badge.dipinjam  { background: var(--orange-soft); color: var(--orange); }
+    .status-badge.dikembalikan { background: var(--green-soft); color: var(--green); }
+    .status-badge.terlambat { background: var(--red-soft); color: var(--red); }
+    .denda-label { font-size: 0.7rem; color: var(--red); font-weight: 700; margin-top: 0.25rem; }
+
+    /* ── LIST ITEMS — KUNJUNGAN ── */
+    .kunjungan-item {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background 0.15s; animation: fadeIn 0.3s ease both;
+    }
+    .kunjungan-item:last-child { border-bottom: none; }
+    .kunjungan-item:hover { background: #fafbff; }
+    .kunjungan-dot {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      background: var(--primary-soft);
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .kunjungan-info { flex: 1; min-width: 0; }
+    .kunjungan-keperluan { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .kunjungan-meta     { font-size: 0.75rem; color: var(--muted); }
+    .kunjungan-time     { font-size: 0.75rem; color: var(--muted); text-align: right; white-space: nowrap; flex-shrink: 0; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 3rem 1.5rem;
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; display: block; opacity: 0.5; }
+    .empty-state h3 { font-size: 0.95rem; font-weight: 700; color: var(--muted); margin-bottom: 0.35rem; }
+    .empty-state p  { font-size: 0.8rem; color: #aab0bc; }
+
+    /* ── LOADING ── */
+    .loading-state { text-align: center; padding: 2.5rem; }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.7s linear infinite; margin: 0 auto 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state p { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .main { padding: 1.25rem 1rem 3rem; }
+      .page-header { padding: 1.35rem 1.35rem; border-radius: 16px; }
+      .page-header h1 { font-size: 1.15rem; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .stats-row .stat-card:last-child { grid-column: 1 / -1; }
+      .pinjam-item { flex-wrap: wrap; }
+      .pinjam-status { width: 100%; text-align: left; margin-top: 0.3rem; }
+      .filter-bar { flex-wrap: wrap; }
+    }
+
+    @media (max-width: 360px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .stats-row .stat-card:last-child { grid-column: auto; }
+      .tab-btn { font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<navbar-component></navbar-component>
+
+<div class="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>📖 Riwayat Aktivitas</h1>
+    <p id="headerSub">Memuat data...</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon blue">📚</div>
+      <div>
+        <div class="stat-val" id="statTotalPinjam">—</div>
+        <div class="stat-lbl">Total Pinjam</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div>
+        <div class="stat-val" id="statKembali">—</div>
+        <div class="stat-lbl">Sudah Kembali</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">🏛️</div>
+      <div>
+        <div class="stat-val" id="statKunjungan">—</div>
+        <div class="stat-lbl">Kunjungan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabPinjam" onclick="switchTab('pinjam')">
+      📚 Peminjaman <span class="badge" id="badgePinjam">0</span>
+    </button>
+    <button class="tab-btn" id="tabKunjungan" onclick="switchTab('kunjungan')">
+      🏛️ Kunjungan <span class="badge" id="badgeKunjungan">0</span>
+    </button>
+  </div>
+
+  <!-- PANEL PEMINJAMAN -->
+  <div id="panelPinjam">
+    <div class="filter-bar">
+      <select class="filter-select" id="filterStatus" onchange="renderPinjaman()">
+        <option value="">Semua Status</option>
+        <option value="dipinjam">Dipinjam</option>
+        <option value="dikembalikan">Dikembalikan</option>
+        <option value="terlambat">Terlambat</option>
+      </select>
+    </div>
+    <div class="card" id="listPinjaman">
+      <div class="loading-state"><div class="spinner"></div><p>Memuat riwayat peminjaman...</p></div>
+    </div>
+  </div>
+
+  <!-- PANEL KUNJUNGAN -->
+  <div id="panelKunjungan" style="display:none;">
+    <div class="card" id="listKunjungan">
+      <div class="loading-state"><div class="spinner"></div><p>Memuat riwayat kunjungan...</p></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { db } from "../firebase.js";
+  import {
+    collection, query, where, orderBy, getDocs
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // ── Auth check ──
+  const userData = JSON.parse(sessionStorage.getItem("userActive"));
+  if (!userData) window.location.href = "../login.html";
+
+  const namaSiswa = userData.nama || "Siswa";
+  const nisSiswa  = userData.password || userData.nis || "";
+
+  document.getElementById("headerSub").textContent = `Halo, ${namaSiswa} 👋`;
+
+  // ── State ──
+  let allPinjaman   = [];
+  let allKunjungan  = [];
+
+  // ── Format Tanggal ──
+  function fmtDate(ts) {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function fmtTime(ts) {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // ── Status badge helper ──
+  function getStatusBadge(item) {
+    const status = item.status || "dipinjam";
+    // Cek terlambat: jika dipinjam & sudah lewat tgl_kembali
+    if (status === "dipinjam") {
+      const batas = item.tgl_kembali?.toDate ? item.tgl_kembali.toDate() : new Date(item.tgl_kembali);
+      if (batas && new Date() > batas) {
+        return { cls: "terlambat", label: "⚠️ Terlambat" };
+      }
+      return { cls: "dipinjam", label: "📤 Dipinjam" };
+    }
+    if (status === "dikembalikan") return { cls: "dikembalikan", label: "✅ Dikembalikan" };
+    return { cls: status, label: status };
+  }
+
+  // ── Render Peminjaman ──
+  window.renderPinjaman = function () {
+    const filterVal = document.getElementById("filterStatus").value;
+    const container = document.getElementById("listPinjaman");
+
+    let filtered = allPinjaman;
+    if (filterVal) {
+      filtered = allPinjaman.filter(item => {
+        const s = getStatusBadge(item).cls;
+        return s === filterVal;
+      });
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <h3>Tidak ada data</h3>
+          <p>${filterVal ? "Tidak ada peminjaman dengan status ini." : "Kamu belum pernah meminjam buku."}</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map((item, i) => {
+      const badge = getStatusBadge(item);
+      const tglPinjam  = fmtDate(item.tgl_pinjam);
+      const tglKembali = fmtDate(item.tgl_kembali);
+      const dendaHtml  = item.denda > 0
+        ? `<div class="denda-label">Denda: Rp${item.denda.toLocaleString("id-ID")}</div>` : "";
+      return `
+        <div class="pinjam-item" style="animation-delay:${i * 0.05}s">
+          <div class="book-cover">📖</div>
+          <div class="pinjam-info">
+            <div class="pinjam-judul" title="${item.judul}">${item.judul || "—"}</div>
+            <div class="pinjam-meta">${item.penerbit || "Tanpa Penerbit"}</div>
+            <div class="pinjam-dates">
+              <div class="date-chip">📅 Pinjam: ${tglPinjam}</div>
+              <div class="date-chip">🔔 Batas: ${tglKembali}</div>
+            </div>
+          </div>
+          <div class="pinjam-status">
+            <span class="status-badge ${badge.cls}">${badge.label}</span>
+            ${dendaHtml}
+          </div>
+        </div>`;
+    }).join("");
+  };
+
+  // ── Render Kunjungan ──
+  function renderKunjungan() {
+    const container = document.getElementById("listKunjungan");
+
+    if (allKunjungan.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">🏛️</span>
+          <h3>Belum ada kunjungan</h3>
+          <p>Kamu belum pernah mencatat kunjungan ke perpustakaan.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = allKunjungan.map((item, i) => {
+      const tgl  = fmtDate(item.tanggal || item.created_at);
+      const waktu = item.waktu_masuk || fmtTime(item.tanggal || item.created_at);
+      return `
+        <div class="kunjungan-item" style="animation-delay:${i * 0.05}s">
+          <div class="kunjungan-dot">🏛️</div>
+          <div class="kunjungan-info">
+            <div class="kunjungan-keperluan">${item.keperluan || "—"}</div>
+            <div class="kunjungan-meta">${item.keterangan || "Tidak ada keterangan"}</div>
+          </div>
+          <div class="kunjungan-time">
+            <div style="font-weight:700; color:var(--text);">${waktu}</div>
+            <div>${tgl}</div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // ── Switch Tab ──
+  window.switchTab = function(tab) {
+    document.getElementById("panelPinjam").style.display    = tab === "pinjam"    ? "block" : "none";
+    document.getElementById("panelKunjungan").style.display = tab === "kunjungan" ? "block" : "none";
+    document.getElementById("tabPinjam").classList.toggle("active",    tab === "pinjam");
+    document.getElementById("tabKunjungan").classList.toggle("active", tab === "kunjungan");
+  };
+
+  // ── Load Data ──
+  async function loadData() {
+    try {
+      // Peminjaman
+      const qPinjam = query(
+        collection(db, "peminjaman"),
+        where("siswa_id", "==", nisSiswa),
+        orderBy("tgl_pinjam", "desc")
+      );
+      const snapPinjam = await getDocs(qPinjam);
+      allPinjaman = snapPinjam.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Stats
+      const sudahKembali = allPinjaman.filter(i => i.status === "dikembalikan").length;
+      document.getElementById("statTotalPinjam").textContent = allPinjaman.length;
+      document.getElementById("statKembali").textContent     = sudahKembali;
+      document.getElementById("badgePinjam").textContent     = allPinjaman.length;
+
+      renderPinjaman();
+    } catch (err) {
+      console.error("Gagal load peminjaman:", err);
+      document.getElementById("listPinjaman").innerHTML =
+        `<div class="empty-state"><span class="empty-icon">⚠️</span><h3>Gagal memuat data</h3><p>${err.message}</p></div>`;
+    }
+
+    try {
+      // Kunjungan — filter by nama karena collection kunjungan tidak punya siswa_id
+      const qKunjungan = query(
+        collection(db, "kunjungan"),
+        where("nama", "==", namaSiswa),
+        orderBy("tanggal", "desc")
+      );
+      const snapKunjungan = await getDocs(qKunjungan);
+      allKunjungan = snapKunjungan.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      document.getElementById("statKunjungan").textContent    = allKunjungan.length;
+      document.getElementById("badgeKunjungan").textContent   = allKunjungan.length;
+
+      renderKunjungan();
+    } catch (err) {
+      console.error("Gagal load kunjungan:", err);
+      document.getElementById("listKunjungan").innerHTML =
+        `<div class="empty-state"><span class="empty-icon">⚠️</span><h3>Gagal memuat data</h3><p>${err.message}</p></div>`;
+    }
+  }
+
+  loadData();
+</script>
+
+</body>
+</html>

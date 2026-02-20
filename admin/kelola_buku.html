@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koleksi Buku</title>
+  <script src="/admin/sidebar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase — diambil dari /firebase.js di root -->
+  <script type="module">
+    import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "../firebase.js";
+
+    window._db = db;
+    window._col = collection(db, "buku");
+    window._firestoreOps = { getDocs, addDoc, updateDoc, deleteDoc, doc, collection };
+
+    window.dispatchEvent(new Event("firebase-ready"));
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --blue:   #4B7FF2;
+      --purple: #B36FF2;
+      --green:  #10b981;
+      --amber:  #f59e0b;
+      --red:    #ef4444;
+      --text:   #1e1e2e;
+      --muted:  #8b90a7;
+      --border: #ececf5;
+      --bg:     #f5f6fa;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .content { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2.5rem;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 40;
+      box-shadow: 0 1px 12px rgba(75,127,242,0.05);
+    }
+
+    .topbar-left h1 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+    .topbar-left p  { font-size: 0.72rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+
+    .btn-primary {
+      display: flex; align-items: center; gap: 0.45rem;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white; border: none;
+      padding: 0.5rem 1.1rem;
+      border-radius: 10px;
+      font-size: 0.82rem; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      box-shadow: 0 3px 12px rgba(75,127,242,0.3);
+      transition: all 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(75,127,242,0.4); }
+
+    /* ── MAIN ── */
+    .main { padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* ── SEARCH & FILTER BAR ── */
+    .filter-bar {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative; flex: 1; min-width: 200px;
+    }
+
+    .search-wrap .search-icon {
+      position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%);
+      font-size: 14px; pointer-events: none; opacity: 0.4;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-family: inherit; font-size: 0.82rem; font-weight: 500;
+      color: var(--text);
+      background: #fafafa;
+      outline: none; transition: all 0.15s;
+    }
+    .search-input:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(75,127,242,0.1); }
+    .search-input::placeholder { color: #c5c7d4; }
+
+    .filter-select {
+      padding: 0.55rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); background: #fafafa;
+      outline: none; cursor: pointer; transition: border 0.15s;
+    }
+    .filter-select:focus { border-color: var(--blue); }
+
+    .stat-pill {
+      font-size: 0.72rem; font-weight: 700;
+      background: #eef3ff; color: var(--blue);
+      border: 1px solid #dde3f8;
+      padding: 0.38rem 0.85rem; border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* ── TABLE PANEL ── */
+    .table-panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead tr { background: #f9f9fb; border-bottom: 1px solid var(--border); }
+
+    th {
+      padding: 0.85rem 1.1rem;
+      font-size: 0.68rem; font-weight: 800;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em;
+      text-align: left; white-space: nowrap;
+    }
+
+    td {
+      padding: 0.9rem 1.1rem;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text);
+      border-bottom: 1px solid #f5f5f9;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.12s; }
+    tbody tr:hover { background: #fafafe; }
+
+    .td-title { font-weight: 700; color: var(--text); max-width: 220px; }
+    .td-title .title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .td-isbn { font-size: 0.72rem; color: var(--muted); font-family: monospace; margin-top: 2px; }
+
+    .stok-badge {
+      display: inline-flex; align-items: center;
+      padding: 0.25rem 0.65rem; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700;
+    }
+    .stok-ok   { background: #ecfdf5; color: #10b981; }
+    .stok-low  { background: #fffbeb; color: #f59e0b; }
+    .stok-zero { background: #fef2f2; color: #ef4444; }
+
+    .sumber-badge {
+      display: inline-flex; align-items: center;
+      padding: 0.22rem 0.6rem; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 700;
+      background: #eef3ff; color: var(--blue);
+    }
+
+    .action-btns { display: flex; align-items: center; gap: 0.4rem; }
+
+    .btn-edit, .btn-del {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; cursor: pointer; border: none;
+      transition: all 0.15s;
+    }
+    .btn-edit { background: #eef3ff; color: var(--blue); }
+    .btn-edit:hover { background: #dde3f8; transform: scale(1.1); }
+    .btn-del  { background: #fef2f2; color: var(--red); }
+    .btn-del:hover  { background: #fee2e2; transform: scale(1.1); }
+
+    /* ── EMPTY & LOADING ── */
+    .empty-state, .loading-state {
+      padding: 4rem 2rem;
+      text-align: center; color: var(--muted);
+    }
+    .empty-state .illo { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+    .empty-state h3 { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+    .empty-state p  { font-size: 0.8rem; }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #eef3ff;
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .page-info { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+
+    .page-btns { display: flex; gap: 0.35rem; }
+
+    .page-btn {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700;
+      border: 1.5px solid var(--border);
+      background: white; color: var(--muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .page-btn:hover:not(:disabled) { background: #eef3ff; border-color: #dde3f8; color: var(--blue); }
+    .page-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+    .page-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(30,30,46,0.35);
+      backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: white;
+      border-radius: 20px;
+      width: 100%; max-width: 500px;
+      margin: 1rem;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+      animation: modalIn 0.25s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.94) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .modal-title { font-size: 0.95rem; font-weight: 800; }
+
+    .modal-close {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: #f5f5f9; border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; cursor: pointer; transition: background 0.15s;
+    }
+    .modal-close:hover { background: #eef3ff; }
+
+    .modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.9rem; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+
+    .form-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .form-input, .form-select {
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-family: inherit; font-size: 0.83rem; font-weight: 500;
+      color: var(--text); outline: none; transition: all 0.15s;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(75,127,242,0.1); }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem;
+    }
+
+    .btn-cancel {
+      padding: 0.52rem 1rem; border-radius: 9px;
+      border: 1.5px solid var(--border);
+      background: white; color: var(--muted);
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel:hover { background: #f5f5f9; }
+
+    .btn-save {
+      padding: 0.52rem 1.2rem; border-radius: 9px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white; border: none;
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+      box-shadow: 0 3px 12px rgba(75,127,242,0.3);
+    }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(75,127,242,0.4); }
+    .btn-save:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+      background: var(--text); color: white;
+      padding: 0.75rem 1.25rem; border-radius: 12px;
+      font-size: 0.82rem; font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      display: flex; align-items: center; gap: 0.5rem;
+      transform: translateY(20px); opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #10b981; }
+    .toast.error   { background: var(--red); }
+  </style>
+</head>
+<body>
+
+  <admin-sidebar active="buku"></admin-sidebar>
+
+  <div class="content">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Koleksi Buku</h1>
+        <p>Kelola data buku perpustakaan</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-primary" id="btnTambah">＋ Tambah Buku</button>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- FILTER BAR -->
+<div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="searchInput" placeholder="Cari judul, pengarang, ISBN...">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <label class="form-label" style="margin:0; white-space:nowrap;">Tampilkan:</label>
+          <select class="filter-select" id="entriesPerPage">
+            <option value="10">10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+
+        <select class="filter-select" id="filterStok">
+          <option value="">Semua Stok</option>
+          <option value="tersedia">Tersedia</option>
+          <option value="menipis">Menipis (≤5)</option>
+          <option value="habis">Habis</option>
+        </select>
+        <span class="stat-pill" id="statPill">📚 0 buku</span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Buku</th>
+                <th>Pengarang</th>
+                <th>Penerbit</th>
+                <th>Tahun</th>
+                <th>Sumber</th>
+                <th>Stok</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tabelBuku">
+              <tr><td colspan="8">
+                <div class="loading-state">
+                  <div class="spinner"></div>
+                  <div style="font-size:0.82rem;font-weight:600;">Memuat data...</div>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="paginationBar" style="display:none;">
+          <span class="page-info" id="pageInfo"></span>
+          <div class="page-btns" id="pageBtns"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH/EDIT -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">Tambah Buku</span>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editDocId">
+        <div class="form-group">
+          <label class="form-label">Judul Buku</label>
+          <input type="text" class="form-input" id="fJudul" placeholder="Judul buku...">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ISBN</label>
+            <input type="text" class="form-input" id="fISBN" placeholder="978-xxx-xxx-xxx-x">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tahun Terbit</label>
+            <input type="text" class="form-input" id="fTahun" placeholder="2024">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Pengarang</label>
+            <input type="text" class="form-input" id="fPengarang" placeholder="Nama pengarang...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Penerbit</label>
+            <input type="text" class="form-input" id="fPenerbit" placeholder="Nama penerbit...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Stok</label>
+            <input type="number" class="form-input" id="fStok" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sumber Buku</label>
+            <input type="text" class="form-input" id="fSumber" placeholder="Sekolah">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btnCancel">Batal</button>
+        <button class="btn-save" id="btnSave">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+<script type="module">
+    // 1. Import langsung dari source
+    import { db, collection, getDocs, setDoc, deleteDoc, doc } from "../firebase.js";
+
+    // Variabel Global Internal (Module Scope)
+    let allBuku = [];
+    let filtered = [];
+    let currentPage = 1;
+    let PER_PAGE = 10;
+    let editDocId = null;
+
+    // --- Fungsi UI & Helpers ---
+    const showToast = (msg, type = 'success') => {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => { t.classList.remove('show'); }, 2800);
+    };
+
+    const stokBadge = (stok) => {
+        const n = Number(stok);
+        if (n === 0) return `<span class="stok-badge stok-zero">Habis</span>`;
+        if (n <= 5)  return `<span class="stok-badge stok-low">${n} tersisa</span>`;
+        return `<span class="stok-badge stok-ok">${n} tersedia</span>`;
+    };
+
+    const closeModal = () => {
+        document.getElementById('modalOverlay').classList.remove('open');
+        ['fJudul','fISBN','fTahun','fPengarang','fPenerbit','fStok','fSumber'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        editDocId = null;
+    };
+
+    const openModal = (title) => {
+        document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalOverlay').classList.add('open');
+    };
+
+    // --- Logika Core (Render & Filter) ---
+    const renderTable = () => {
+        const tbody = document.getElementById('tabelBuku');
+        const start = (currentPage - 1) * PER_PAGE;
+        const pageData = filtered.slice(start, start + PER_PAGE);
+
+        document.getElementById('statPill').textContent = `📚 ${filtered.length} buku`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="illo">📭</span><h3>Buku tidak ditemukan</h3></div></td></tr>`;
+            document.getElementById('paginationBar').style.display = 'none';
+            return;
+        }
+
+tbody.innerHTML = pageData.map((b, i) => `
+    <tr>
+        <td style="color:var(--muted);font-size:0.75rem;font-weight:700;">${b._docId}</td>
+        <td class="td-title">
+            <span class="title-text" title="${b.judul || ''}">${b.judul || '-'}</span>
+            <span class="td-isbn">${b.isbn || ''}</span>
+        </td>
+        <td>${b.pengarang || '-'}</td>
+        <td>${b.penerbit || '-'}</td>
+        <td>${b.tahun_terbit || '-'}</td>
+        <td><span class="sumber-badge">${b.sumber || '-'}</span></td>
+        <td>${stokBadge(b.stok)}</td>
+        <td>
+            <div class="action-btns">
+                <button class="btn-edit" data-id="${b._docId}">✏️</button>
+                <button class="btn-del" data-id="${b._docId}" data-judul="${(b.judul || '').replace(/'/g,"\\'")}">🗑️</button>
+            </div>
+        </td>
+    </tr>
+`).join('');
+
+        renderPagination();
+        attachActionEvents();
+    };
+
+    const renderPagination = () => {
+        const total = Math.ceil(filtered.length / PER_PAGE);
+        const bar = document.getElementById('paginationBar');
+        if (total <= 1) { bar.style.display = 'none'; return; }
+        bar.style.display = 'flex';
+
+        const start = (currentPage - 1) * PER_PAGE + 1;
+        const end   = Math.min(currentPage * PER_PAGE, filtered.length);
+        document.getElementById('pageInfo').textContent = `Menampilkan ${start}–${end} dari ${filtered.length} buku`;
+
+        const btns = document.getElementById('pageBtns');
+        let html = `<button class="page-btn prev-btn" ${currentPage===1?'disabled':''}>‹</button>`;
+        for (let p = 1; p <= total; p++) {
+            if (total > 7 && p > 2 && p < total-1 && Math.abs(p - currentPage) > 1) {
+                if (p === 3 || p === total-2) html += `<span style="padding:0 4px;color:var(--muted)">…</span>`;
+                continue;
+            }
+            html += `<button class="page-btn num-btn ${p===currentPage?'active':''}" data-page="${p}">${p}</button>`;
+        }
+        html += `<button class="page-btn next-btn" ${currentPage===total?'disabled':''}>›</button>`;
+        btns.innerHTML = html;
+
+        // Attach pagination events
+        btns.querySelectorAll('.num-btn').forEach(b => b.onclick = () => { currentPage = Number(b.dataset.page); renderTable(); });
+        btns.querySelector('.prev-btn').onclick = () => { if(currentPage > 1) { currentPage--; renderTable(); }};
+        btns.querySelector('.next-btn').onclick = () => { if(currentPage < total) { currentPage++; renderTable(); }};
+    };
+
+    const applyFilter = () => {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const stokF = document.getElementById('filterStok').value;
+        PER_PAGE = Number(document.getElementById('entriesPerPage').value);
+
+        filtered = allBuku.filter(b => {
+            const judul = (b['judul'] || '').toLowerCase();
+            const pengarang = (b['pengarang'] || b['PENGARANG'] || '').toLowerCase();
+            const isbn = (b['isbn'] || '').toLowerCase();
+            const matchQ = !q || judul.includes(q) || pengarang.includes(q) || isbn.includes(q);
+            
+            const stok = Number(b['stok'] || b['jumlah_buku'] || 0);
+            const matchStok = !stokF ||
+                (stokF === 'tersedia' && stok > 5) ||
+                (stokF === 'menipis'  && stok > 0 && stok <= 5) ||
+                (stokF === 'habis'    && stok === 0);
+            
+            return matchQ && matchStok;
+        });
+
+        currentPage = 1;
+        renderTable();
+    };
+
+    // --- Event Listeners untuk Tombol Aksi di Baris ---
+    const attachActionEvents = () => {
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.onclick = () => {
+                const b = allBuku.find(x => x._docId === btn.dataset.id);
+                if (!b) return;
+                editDocId = btn.dataset.id;
+                document.getElementById('fJudul').value = b['judul'] || '';
+                document.getElementById('fISBN').value = b['isbn'] || '';
+                document.getElementById('fTahun').value = b['tahun_terbit'] || b['tahun_terbit'] || '';
+                document.getElementById('fPengarang').value = b['pengarang'] || b['pengarang'] || '';
+                document.getElementById('fPenerbit').value = b['penerbit'] || '';
+                document.getElementById('fStok').value = b['stok'] || b['jumlah_buku'] || 0;
+                document.getElementById('fSumber').value = b['sumber'] || b['sumber_buku'] || 'Sekolah';
+                openModal('Edit Buku');
+            };
+        });
+
+        document.querySelectorAll('.btn-del').forEach(btn => {
+            btn.onclick = async () => {
+                if (!confirm(`Hapus "${btn.dataset.judul}"?`)) return;
+                try {
+                    await deleteDoc(doc(db, 'buku', btn.dataset.id));
+                    allBuku = allBuku.filter(x => x._docId !== btn.dataset.id);
+                    applyFilter();
+                    showToast('🗑️ Terhapus');
+                } catch (e) { showToast('Gagal hapus', 'error'); }
+            };
+        });
+    };
+
+    // --- Firebase Operations ---
+    const loadData = async () => {
+        try {
+            const snap = await getDocs(collection(db, "buku"));
+            allBuku = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
+            allBuku.sort((a, b) => (parseInt(a._docId) || 0) - (parseInt(b._docId) || 0));
+            filtered = [...allBuku];
+            renderTable();
+        } catch (err) {
+            console.error(err);
+            showToast('Gagal memuat data', 'error');
+        }
+    };
+
+    const saveData = async () => {
+        const btn = document.getElementById('btnSave');
+        const data = {
+            'judul': document.getElementById('fJudul').value.trim(),
+            'isbn': document.getElementById('fISBN').value.trim(),
+            'tahun_terbit': document.getElementById('fTahun').value.trim(),
+            'pengarang': document.getElementById('fPengarang').value.trim(),
+            'penerbit': document.getElementById('fPenerbit').value.trim(),
+            'stok': Number(document.getElementById('fStok').value) || 0,
+            'sumber': document.getElementById('fSumber').value,
+        };
+
+        if (!data['judul']) return showToast('Judul wajib diisi', 'error');
+
+        btn.disabled = true;
+        try {
+            let targetId = editDocId;
+            if (!targetId) {
+                const maxId = allBuku.reduce((max, b) => Math.max(max, parseInt(b._docId) || 0), 0);
+                targetId = (maxId + 1).toString();
+            }
+
+            await setDoc(doc(db, 'buku', targetId), data);
+            
+            const idx = allBuku.findIndex(x => x._docId === targetId);
+            if (idx > -1) allBuku[idx] = { ...data, _docId: targetId };
+            else allBuku.push({ ...data, _docId: targetId });
+
+            showToast('✅ Berhasil disimpan!');
+            applyFilter();
+            closeModal();
+        } catch (err) {
+            showToast('❌ Gagal simpan', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    // --- Inisialisasi Event DOM ---
+    document.getElementById('btnTambah').onclick = () => { editDocId = null; openModal('Tambah Buku'); };
+    document.getElementById('modalClose').onclick = closeModal;
+    document.getElementById('btnCancel').onclick = closeModal;
+    document.getElementById('btnSave').onclick = saveData;
+    document.getElementById('searchInput').oninput = applyFilter;
+    document.getElementById('filterStok').onchange = applyFilter;
+    document.getElementById('entriesPerPage').onchange = applyFilter;
+
+    // Jalankan Load Data pertama kali
+    loadData();
+</script>
+
+</body>
+</html>

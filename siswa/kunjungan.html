@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kunjungan — Perpus SMK</title>
+  <script src="../navbar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4B7FF2; --primary-soft: #eef3ff; --accent: #B36FF2; --accent-soft: #f7f0ff;
+      --green: #10b981; --green-soft: #ecfdf5; --orange: #f59e0b; --orange-soft: #fffbeb;
+      --red: #ef4444; --red-soft: #fef2f2; --white: #ffffff; --gray: #f1f5f9;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--gray); color: var(--text); min-height: 100vh; }
+    .main { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* STEPS */
+    .steps { display: flex; align-items: center; justify-content: space-between; background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem 1.75rem; margin-bottom: 1.75rem; }
+    .step { display: flex; align-items: center; gap: 0.65rem; flex: 1; }
+    .step-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 800; border: 2px solid var(--border); background: var(--gray); color: var(--muted); }
+    .step.active .step-num { background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; border: none; }
+    .step.done .step-num { background: var(--green); color: white; border: none; }
+    .step-divider { flex: 1; height: 2px; background: var(--border); margin: 0 0.75rem; border-radius: 2px; }
+    .step-divider.done { background: var(--green); }
+
+    /* CARDS */
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; margin-bottom: 1.25rem; }
+    .card-head { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-head h2 { font-size: 0.88rem; font-weight: 800; }
+    .card-body { padding: 1.25rem 1.5rem; }
+
+    /* FORM */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+    .form-input, .form-textarea { border: 1.5px solid var(--border); border-radius: 10px; padding: 0.7rem; background: var(--gray); font-family: inherit; font-size: 0.87rem; outline: none; transition: border 0.15s; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(75,127,242,0.1); }
+    .form-input[readonly] { background: #f8f9fb; cursor: not-allowed; color: var(--muted); }
+    .form-textarea { resize: vertical; min-height: 90px; }
+
+    /* KEPERLUAN OPTIONS */
+    .keperluan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 0.75rem; }
+    .keperluan-chip {
+      padding: 0.55rem 0.75rem; border-radius: 10px; border: 1.5px solid var(--border);
+      font-size: 0.78rem; font-weight: 600; color: var(--muted); background: var(--gray);
+      cursor: pointer; text-align: center; transition: all 0.15s;
+    }
+    .keperluan-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+    .keperluan-chip.selected { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); font-weight: 700; }
+
+    /* SUMMARY & SUBMIT */
+    .summary-box { background: var(--gray); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem; }
+    .sum-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.3rem 0; border-bottom: 1px dashed #d1d5db; }
+    .sum-row:last-child { border-bottom: none; }
+    .btn-submit { width: 100%; background: linear-gradient(135deg, var(--accent), var(--primary)); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 800; font-size: 0.95rem; font-family: inherit; cursor: pointer; box-shadow: 0 4px 15px rgba(107,115,230,0.3); transition: 0.2s; }
+    .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(107,115,230,0.4); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* SUCCESS MODAL */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(8px); z-index: 999; align-items: center; justify-content: center; }
+    .overlay.show { display: flex; }
+    .success-box { background: white; border-radius: 24px; padding: 2.5rem; text-align: center; max-width: 380px; width: 90%; animation: popIn 0.3s cubic-bezier(0.16,1,0.3,1); }
+    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .success-box .success-icon { font-size: 3.5rem; margin-bottom: 1rem; display: block; }
+    .success-box h2 { margin-bottom: 0.5rem; }
+    .success-box p { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<navbar-component></navbar-component>
+
+<div class="main">
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div style="margin-left:0.5rem;"><div style="font-size:0.75rem; font-weight:800;">Data Diri</div></div>
+    </div>
+    <div class="step-divider" id="divider1"></div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div style="margin-left:0.5rem;"><div style="font-size:0.75rem; font-weight:800;">Keperluan</div></div>
+    </div>
+    <div class="step-divider" id="divider2"></div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div style="margin-left:0.5rem;"><div style="font-size:0.75rem; font-weight:800;">Konfirmasi</div></div>
+    </div>
+  </div>
+
+  <!-- DATA DIRI (auto-filled) -->
+  <div class="card">
+    <div class="card-head"><h2>👤 Data Pengunjung</h2></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nama</label>
+          <input type="text" id="fieldNama" class="form-input" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Jabatan / Kelas</label>
+          <input type="text" id="fieldKelas" class="form-input" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Kunjungan</label>
+          <input type="date" id="fieldTanggal" class="form-input" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Waktu Masuk</label>
+          <input type="text" id="fieldWaktu" class="form-input" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEPERLUAN -->
+  <div class="card">
+    <div class="card-head"><h2>📋 Keperluan Kunjungan</h2></div>
+    <div class="card-body">
+      <div class="form-group" style="margin-bottom: 0.85rem;">
+        <label class="form-label">Keperluan / Tujuan Kunjungan</label>
+        <input type="text" id="fieldKeperluan" class="form-input" placeholder="Contoh: Meminjam buku, belajar, mengerjakan tugas...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Keterangan Tambahan (opsional)</label>
+        <textarea id="fieldKeterangan" class="form-textarea" placeholder="Tulis keterangan tambahan jika ada..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY + SUBMIT -->
+  <div class="card" style="border:none; background:transparent;">
+
+    <button class="btn-submit" id="btnSubmit" disabled onclick="submitForm()">Catat Kunjungan →</button>
+  </div>
+
+</div>
+
+<!-- SUCCESS OVERLAY -->
+<div class="overlay" id="successOverlay">
+  <div class="success-box">
+    <span class="success-icon">🎉</span>
+    <h2>Kunjungan Tercatat!</h2>
+    <p>Selamat datang di perpustakaan.<br>Semoga kunjunganmu menyenangkan!</p>
+    <button onclick="window.location.href='index.html'" style="width:100%; padding:0.8rem; border-radius:12px; border:none; background:var(--primary); color:white; font-weight:700; font-family:inherit; cursor:pointer; font-size:0.9rem;">
+      Ke Dashboard
+    </button>
+  </div>
+</div>
+
+<script type="module">
+  import { db } from "../firebase.js";
+  import { collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+
+  // ── Ambil data siswa dari session ──
+  const userData = JSON.parse(sessionStorage.getItem("userActive"));
+  if (!userData) window.location.href = "../login.html";
+
+  const namaSiswa  = userData.nama  || "—";
+  const kelasSiswa = userData.kelas || userData.role || "—";
+
+  // ── Auto-fill data diri ──
+  const now = new Date();
+  document.getElementById("fieldNama").value    = namaSiswa;
+  document.getElementById("fieldKelas").value   = kelasSiswa;
+  document.getElementById("fieldTanggal").value = now.toISOString().split('T')[0];
+  document.getElementById("fieldWaktu").value   = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+
+
+  // ── Aktifkan tombol saat keperluan diketik ──
+  document.getElementById('fieldKeperluan').addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    document.getElementById('btnSubmit').disabled = !val;
+
+    if (val) {
+      document.getElementById('step1').classList.add('done');
+      document.getElementById('step1').querySelector('.step-num').textContent = '✓';
+      document.getElementById('divider1').classList.add('done');
+      document.getElementById('step2').classList.add('done');
+      document.getElementById('step2').querySelector('.step-num').textContent = '✓';
+      document.getElementById('divider2').classList.add('done');
+      document.getElementById('step3').classList.add('active');
+    } else {
+      document.getElementById('step2').classList.remove('done');
+      document.getElementById('step2').querySelector('.step-num').textContent = '2';
+      document.getElementById('divider2').classList.remove('done');
+      document.getElementById('step3').classList.remove('active');
+    }
+  });
+
+  window.submitForm = async () => {
+    const keperluan = document.getElementById('fieldKeperluan').value.trim();
+    if (!keperluan) return;
+
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    try {
+      await addDoc(collection(db, "kunjungan"), {
+        nama:        namaSiswa,
+        kelas:       kelasSiswa,
+        keperluan:   keperluan,
+        keterangan:  document.getElementById('fieldKeterangan').value.trim(),
+        tanggal:     serverTimestamp(),
+        waktu_masuk: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        created_at:  serverTimestamp(),
+      });
+
+      document.getElementById('successOverlay').classList.add('show');
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mencatat kunjungan: " + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Catat Kunjungan →';
+    }
+  };
+</script>
+
+</body>
+</html>

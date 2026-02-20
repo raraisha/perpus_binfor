@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kunjungan</title>
+  <script src="/admin/sidebar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script type="module">
+    import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, Timestamp } from "/firebase.js";
+
+    window._db = db;
+    window._firestoreOps = { getDocs, addDoc, updateDoc, deleteDoc, doc, collection, query, orderBy, Timestamp };
+    window._colKunjungan = collection(db, "kunjungan");
+
+    window.dispatchEvent(new Event("firebase-ready"));
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --blue:   #4B7FF2;
+      --purple: #B36FF2;
+      --green:  #10b981;
+      --amber:  #f59e0b;
+      --red:    #ef4444;
+      --text:   #1e1e2e;
+      --muted:  #8b90a7;
+      --border: #ececf5;
+      --bg:     #f5f6fa;
+    }
+
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+    .content { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 0 2.5rem; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 40;
+      box-shadow: 0 1px 12px rgba(75,127,242,0.05);
+    }
+    .topbar-left h1 { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+    .topbar-left p  { font-size: 0.72rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+    .topbar-right   { display: flex; align-items: center; gap: 0.75rem; }
+
+    .btn-primary {
+      display: flex; align-items: center; gap: 0.45rem;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white; border: none; padding: 0.5rem 1.1rem;
+      border-radius: 10px; font-size: 0.82rem; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      box-shadow: 0 3px 12px rgba(75,127,242,0.3); transition: all 0.15s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(75,127,242,0.4); }
+
+    /* ── MAIN ── */
+    .main { padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* ── STAT CARDS ── */
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+    .stat-card {
+      background: white; border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.1rem 1.25rem; display: flex; align-items: center; gap: 0.9rem;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(75,127,242,0.08); }
+
+    .sc-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .sc-val  { font-size: 1.6rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+    .sc-lbl  { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      background: white; border: 1px solid var(--border); border-radius: 14px;
+      padding: 1rem 1.25rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap .si { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.4; pointer-events: none; }
+    .search-input {
+      width: 100%; padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+      border: 1.5px solid var(--border); border-radius: 9px;
+      font-family: inherit; font-size: 0.82rem; font-weight: 500; color: var(--text);
+      background: #fafafa; outline: none; transition: all 0.15s;
+    }
+    .search-input:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(75,127,242,0.1); }
+    .search-input::placeholder { color: #c5c7d4; }
+
+    .filter-select {
+      padding: 0.55rem 0.85rem; border: 1.5px solid var(--border); border-radius: 9px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); background: #fafafa; outline: none; cursor: pointer;
+    }
+    .filter-select:focus { border-color: var(--blue); }
+
+    .stat-pill { font-size: 0.72rem; font-weight: 700; background: #eef3ff; color: var(--blue); border: 1px solid #dde3f8; padding: 0.38rem 0.85rem; border-radius: 20px; white-space: nowrap; }
+
+    /* ── TABLE ── */
+    .table-panel {
+      background: white; border: 1px solid var(--border); border-radius: 16px;
+      overflow: hidden; animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f9f9fb; border-bottom: 1px solid var(--border); }
+    th { padding: 0.85rem 1rem; font-size: 0.67rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; text-align: left; white-space: nowrap; }
+    td { padding: 0.88rem 1rem; font-size: 0.81rem; font-weight: 500; color: var(--text); border-bottom: 1px solid #f5f5f9; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.12s; }
+    tbody tr:hover { background: #fafafe; }
+
+    .td-pengunjung .nama  { font-weight: 700; }
+    .td-pengunjung .meta  { font-size: 0.7rem; color: var(--muted); margin-top: 1px; }
+
+    .td-keperluan { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .keperluan-badge { display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; background: #eef3ff; color: var(--blue); }
+
+    .action-btns { display: flex; align-items: center; gap: 0.4rem; }
+    .btn-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-edit { background: #eef3ff; color: var(--blue); }
+    .btn-edit:hover { background: #dde3f8; transform: scale(1.1); }
+    .btn-del  { background: #fef2f2; color: var(--red); }
+    .btn-del:hover  { background: #fee2e2; transform: scale(1.1); }
+
+    /* ── EMPTY / LOADING ── */
+    .empty-state, .loading-state { padding: 4rem 2rem; text-align: center; color: var(--muted); }
+    .empty-state .illo { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+    .empty-state h3 { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+    .empty-state p  { font-size: 0.8rem; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #eef3ff; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 0.75rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── PAGINATION ── */
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border); }
+    .page-info { font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+    .page-btns { display: flex; gap: 0.35rem; }
+    .page-btn { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; border: 1.5px solid var(--border); background: white; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .page-btn:hover:not(:disabled) { background: #eef3ff; border-color: #dde3f8; color: var(--blue); }
+    .page-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+    .page-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── MODAL ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(30,30,46,0.35); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 20px; width: 100%; max-width: 480px; margin: 1rem; box-shadow: 0 24px 60px rgba(0,0,0,0.15); animation: modalIn 0.25s cubic-bezier(0.16,1,0.3,1); }
+    @keyframes modalIn { from { opacity:0; transform:scale(0.94) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+    .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 0.95rem; font-weight: 800; }
+    .modal-close { width: 28px; height: 28px; border-radius: 8px; background: #f5f5f9; border: none; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
+    .modal-close:hover { background: #eef3ff; }
+
+    .modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.9rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-input, .form-textarea { padding: 0.6rem 0.85rem; border: 1.5px solid var(--border); border-radius: 9px; font-family: inherit; font-size: 0.83rem; font-weight: 500; color: var(--text); outline: none; transition: all 0.15s; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(75,127,242,0.1); }
+    .form-textarea { resize: vertical; min-height: 75px; }
+
+    .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; }
+    .btn-cancel { padding: 0.52rem 1rem; border-radius: 9px; border: 1.5px solid var(--border); background: white; color: var(--muted); font-family: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+    .btn-cancel:hover { background: #f5f5f9; }
+    .btn-save { padding: 0.52rem 1.2rem; border-radius: 9px; background: linear-gradient(135deg, var(--blue), var(--purple)); color: white; border: none; font-family: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s; box-shadow: 0 3px 12px rgba(75,127,242,0.3); }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(75,127,242,0.4); }
+    .btn-save:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; background: var(--text); color: white; padding: 0.75rem 1.25rem; border-radius: 12px; font-size: 0.82rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0.5rem; transform: translateY(20px); opacity: 0; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--green); }
+    .toast.error   { background: var(--red); }
+
+    @media (max-width: 1100px) { .stat-row { grid-template-columns: repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+
+  <admin-sidebar active="kunjungan"></admin-sidebar>
+
+  <div class="content">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Data Kunjungan</h1>
+        <p>Kelola data kunjungan perpustakaan</p>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-primary" id="btnTambah">＋ Tambah Kunjungan</button>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- STAT ROW -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="sc-icon" style="background:#eef3ff;">👣</div>
+          <div>
+            <div class="sc-val" style="color:var(--blue);" id="statTotal">—</div>
+            <div class="sc-lbl">Total Kunjungan</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-icon" style="background:#ecfdf5;">📅</div>
+          <div>
+            <div class="sc-val" style="color:var(--green);" id="statHariIni">—</div>
+            <div class="sc-lbl">Kunjungan Hari Ini</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-icon" style="background:#fff7ed;">📅</div>
+          <div>
+            <div class="sc-val" style="color:var(--amber);" id="statMingguIni">—</div>
+            <div class="sc-lbl">Minggu Ini</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="sc-icon" style="background:#f7f0ff;">👥</div>
+          <div>
+            <div class="sc-val" style="color:var(--purple);" id="statUnikPengunjung">—</div>
+            <div class="sc-lbl">Pengunjung Unik</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="si">🔍</span>
+          <input type="text" class="search-input" id="searchInput" placeholder="Cari nama, kelas, keperluan...">
+        </div>
+        <select class="filter-select" id="filterKelas">
+          <option value="">Semua Kelas</option>
+        </select>
+        <input type="date" class="filter-select" id="filterTanggal" style="color:var(--text);">
+        <span class="stat-pill" id="statPill">👣 0 data</span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Pengunjung</th>
+                <th>Keperluan</th>
+                <th>Keterangan</th>
+                <th>Waktu Masuk</th>
+                <th>Tanggal</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tabelKunjungan">
+              <tr><td colspan="7">
+                <div class="loading-state">
+                  <div class="spinner"></div>
+                  <div style="font-size:0.82rem;font-weight:600;">Memuat data...</div>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="paginationBar" style="display:none;">
+          <span class="page-info" id="pageInfo"></span>
+          <div class="page-btns" id="pageBtns"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">Tambah Kunjungan</span>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nama</label>
+            <input type="text" class="form-input" id="fNama" placeholder="Nama lengkap...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jabatan / Kelas</label>
+            <input type="text" class="form-input" id="fKelas" placeholder="XII RPL / Guru...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Keperluan</label>
+          <input type="text" class="form-input" id="fKeperluan" placeholder="Meminjam buku, belajar, dll...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Keterangan</label>
+          <textarea class="form-textarea" id="fKeterangan" placeholder="Keterangan tambahan (opsional)..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="date" class="form-input" id="fTanggal">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Waktu Masuk</label>
+            <input type="time" class="form-input" id="fWaktu">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btnCancel">Batal</button>
+        <button class="btn-save" id="btnSave">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let allData = [];
+    let filtered = [];
+    let currentPage = 1;
+    const PER_PAGE = 10;
+    let editDocId = null;
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function fmtDate(val) {
+      if (!val) return '—';
+      try {
+        const d = val.toDate ? val.toDate() : new Date(val);
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch { return '—'; }
+    }
+
+    function toInputDate(val) {
+      if (!val) return '';
+      try {
+        const d = val.toDate ? val.toDate() : new Date(val);
+        return d.toISOString().split('T')[0];
+      } catch { return ''; }
+    }
+
+    function isSameDay(val, dateStr) {
+      try {
+        const d = val.toDate ? val.toDate() : new Date(val);
+        return d.toISOString().split('T')[0] === dateStr;
+      } catch { return false; }
+    }
+
+    function updateStats() {
+      const today = new Date().toISOString().split('T')[0];
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+
+      document.getElementById('statTotal').textContent = allData.length;
+
+      document.getElementById('statHariIni').textContent =
+        allData.filter(d => isSameDay(d.tanggal || d.created_at, today)).length;
+
+      document.getElementById('statMingguIni').textContent =
+        allData.filter(d => {
+          try {
+            const tgl = (d.tanggal || d.created_at).toDate ? (d.tanggal || d.created_at).toDate() : new Date(d.tanggal || d.created_at);
+            return tgl >= weekAgo;
+          } catch { return false; }
+        }).length;
+
+      const unik = new Set(allData.map(d => d.nama).filter(Boolean)).size;
+      document.getElementById('statUnikPengunjung').textContent = unik;
+    }
+
+    function populateKelasFilter() {
+      const list = [...new Set(allData.map(d => d.kelas).filter(Boolean))].sort();
+      const sel = document.getElementById('filterKelas');
+      list.forEach(k => {
+        const o = document.createElement('option');
+        o.value = k; o.textContent = k;
+        sel.appendChild(o);
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tabelKunjungan');
+      const start = (currentPage - 1) * PER_PAGE;
+      const pageData = filtered.slice(start, start + PER_PAGE);
+
+      document.getElementById('statPill').textContent = `👣 ${filtered.length} data`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="illo">📭</span><h3>Data tidak ditemukan</h3><p>Coba ubah kata kunci atau filter</p></div></td></tr>`;
+        document.getElementById('paginationBar').style.display = 'none';
+        return;
+      }
+
+      tbody.innerHTML = pageData.map((d, i) => `
+        <tr>
+          <td style="color:var(--muted);font-size:0.75rem;font-weight:700;">${start + i + 1}</td>
+          <td class="td-pengunjung">
+            <span class="nama">${d.nama || '-'}</span>
+            <span class="meta">${d.kelas || ''}</span>
+          </td>
+          <td><span class="keperluan-badge">${d.keperluan || '-'}</span></td>
+          <td style="color:var(--muted);font-size:0.78rem;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.keterangan || '—'}</td>
+          <td>${d.waktu_masuk || '—'}</td>
+          <td>${fmtDate(d.tanggal || d.created_at)}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-icon btn-edit" title="Edit" onclick="openEdit('${d._docId}')">✏️</button>
+              <button class="btn-icon btn-del"  title="Hapus" onclick="hapusData('${d._docId}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(filtered.length / PER_PAGE);
+      const bar = document.getElementById('paginationBar');
+      if (totalPages <= 1) { bar.style.display = 'none'; return; }
+      bar.style.display = 'flex';
+      const start = (currentPage - 1) * PER_PAGE + 1;
+      const end   = Math.min(currentPage * PER_PAGE, filtered.length);
+      document.getElementById('pageInfo').textContent = `Menampilkan ${start}–${end} dari ${filtered.length} data`;
+      const btns = document.getElementById('pageBtns');
+      let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+      for (let p = 1; p <= totalPages; p++) {
+        if (totalPages > 7 && p > 2 && p < totalPages-1 && Math.abs(p - currentPage) > 1) {
+          if (p === 3 || p === totalPages-2) html += `<span style="padding:0 4px;color:var(--muted)">…</span>`;
+          continue;
+        }
+        html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+      }
+      html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
+      btns.innerHTML = html;
+    }
+
+    window.goPage = (p) => {
+      const total = Math.ceil(filtered.length / PER_PAGE);
+      if (p < 1 || p > total) return;
+      currentPage = p; renderTable();
+    };
+
+    function applyFilter() {
+      const q      = document.getElementById('searchInput').value.toLowerCase();
+      const kelas  = document.getElementById('filterKelas').value;
+      const tgl    = document.getElementById('filterTanggal').value;
+
+      filtered = allData.filter(d => {
+        const matchQ = !q ||
+          (d.nama||'').toLowerCase().includes(q) ||
+          (d.kelas||'').toLowerCase().includes(q) ||
+          (d.keperluan||'').toLowerCase().includes(q) ||
+          (d.keterangan||'').toLowerCase().includes(q);
+        const matchK = !kelas || d.kelas === kelas;
+        const matchT = !tgl   || isSameDay(d.tanggal || d.created_at, tgl);
+        return matchQ && matchK && matchT;
+      });
+      currentPage = 1;
+      renderTable();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applyFilter);
+    document.getElementById('filterKelas').addEventListener('change', applyFilter);
+    document.getElementById('filterTanggal').addEventListener('change', applyFilter);
+
+    // ── Modal ──
+    function openModal(title) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      ['fNama','fKelas','fKeperluan','fKeterangan','fTanggal','fWaktu'].forEach(id => document.getElementById(id).value = '');
+      editDocId = null;
+    }
+
+    document.getElementById('modalClose').onclick = closeModal;
+    document.getElementById('btnCancel').onclick  = closeModal;
+    document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+    document.getElementById('btnTambah').onclick = () => {
+      editDocId = null;
+      const now = new Date();
+      document.getElementById('fTanggal').value = now.toISOString().split('T')[0];
+      document.getElementById('fWaktu').value   = now.toTimeString().slice(0,5);
+      openModal('Tambah Kunjungan');
+    };
+
+    window.openEdit = (docId) => {
+      const d = allData.find(x => x._docId === docId);
+      if (!d) return;
+      editDocId = docId;
+      document.getElementById('fNama').value      = d.nama       || '';
+      document.getElementById('fKelas').value     = d.kelas      || '';
+      document.getElementById('fKeperluan').value = d.keperluan  || '';
+      document.getElementById('fKeterangan').value= d.keterangan || '';
+      document.getElementById('fTanggal').value   = toInputDate(d.tanggal || d.created_at);
+      document.getElementById('fWaktu').value     = d.waktu_masuk || '';
+      openModal('Edit Kunjungan');
+    };
+
+    // ── Save ──
+    document.getElementById('btnSave').onclick = async () => {
+      const btn = document.getElementById('btnSave');
+      btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+      const { Timestamp } = window._firestoreOps;
+      const tglVal = document.getElementById('fTanggal').value;
+
+      const data = {
+        nama:        document.getElementById('fNama').value.trim(),
+        kelas:       document.getElementById('fKelas').value.trim(),
+        keperluan:   document.getElementById('fKeperluan').value.trim(),
+        keterangan:  document.getElementById('fKeterangan').value.trim(),
+        waktu_masuk: document.getElementById('fWaktu').value,
+        tanggal:     tglVal ? Timestamp.fromDate(new Date(tglVal)) : Timestamp.now(),
+      };
+
+      if (!data.nama || !data.keperluan) {
+        showToast('Nama & keperluan wajib diisi!', 'error');
+        btn.disabled = false; btn.textContent = '💾 Simpan';
+        return;
+      }
+
+      try {
+        const { addDoc, updateDoc, doc } = window._firestoreOps;
+        if (editDocId) {
+          await updateDoc(doc(window._db, 'kunjungan', editDocId), data);
+          const idx = allData.findIndex(x => x._docId === editDocId);
+          if (idx > -1) allData[idx] = { ...data, _docId: editDocId };
+          showToast('✅ Data berhasil diperbarui!');
+        } else {
+          data.created_at = Timestamp.now();
+          const ref = await addDoc(window._colKunjungan, data);
+          allData.unshift({ ...data, _docId: ref.id });
+          showToast('✅ Kunjungan berhasil dicatat!');
+        }
+        updateStats(); applyFilter(); closeModal();
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Gagal menyimpan data', 'error');
+      }
+
+      btn.disabled = false; btn.textContent = '💾 Simpan';
+    };
+
+    // ── Hapus ──
+    window.hapusData = async (docId) => {
+      if (!confirm('Yakin ingin menghapus data kunjungan ini?')) return;
+      try {
+        const { deleteDoc, doc } = window._firestoreOps;
+        await deleteDoc(doc(window._db, 'kunjungan', docId));
+        allData = allData.filter(x => x._docId !== docId);
+        updateStats(); applyFilter();
+        showToast('🗑️ Data berhasil dihapus!');
+      } catch (err) {
+        showToast('❌ Gagal menghapus data', 'error');
+      }
+    };
+
+    // ── Load data ──
+    window.addEventListener('firebase-ready', async () => {
+      try {
+        const { getDocs, query, orderBy } = window._firestoreOps;
+        const q = query(window._colKunjungan, orderBy('created_at', 'desc'));
+        const snap = await getDocs(q);
+        allData = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
+        filtered = [...allData];
+        updateStats();
+        populateKelasFilter();
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('tabelKunjungan').innerHTML = `<tr><td colspan="7"><div class="empty-state"><span class="illo">⚠️</span><h3>Gagal memuat data</h3><p>Periksa konfigurasi Firebase</p></div></td></tr>`;
+      }
+    });
+  </script>
+
+</body>
+</html>

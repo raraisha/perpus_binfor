@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Siswa — Perpus SMK</title>
+  <script src="../navbar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #4B7FF2;
+      --primary-soft: #eef3ff;
+      --accent: #B36FF2;
+      --accent-soft: #f7f0ff;
+      --green: #10b981;
+      --green-soft: #ecfdf5;
+      --orange: #f59e0b;
+      --orange-soft: #fffbeb;
+      --red: #ef4444;
+      --red-soft: #fef2f2;
+      --white: #ffffff;
+      --gray: #f1f5f9;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--gray);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .content {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-left h1 { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.3px; }
+    .topbar-left p { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+
+    .date-chip {
+      background: var(--gray);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* ══ HERO BANNER ══ */
+    .hero-banner {
+      margin: 2rem 2.5rem 0;
+      background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 45%, #2563eb 100%);
+      border-radius: 22px;
+      padding: 2.5rem 3rem;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.45s ease both;
+    }
+
+    .hero-banner::before {
+      content: ''; position: absolute; top: -70px; right: -50px;
+      width: 240px; height: 240px; background: rgba(255,255,255,0.05); border-radius: 50%;
+    }
+
+    .hero-greeting { font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .hero-name { font-size: 2rem; font-weight: 800; color: white; margin-bottom: 0.4rem; letter-spacing: -0.5px; }
+    .hero-meta { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 1.5rem; }
+    .hero-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .h-pill { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; color: white; }
+
+    /* ══ SUMMARY GRID ══ */
+    .section-wrap { padding: 2.5rem 2.5rem 0; animation: fadeUp 0.45s 0.05s ease both; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+    .s-card { background: var(--white); border: 1px solid var(--border); border-radius: 18px; padding: 1.5rem; position: relative; transition: 0.2s; }
+    .s-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.05); }
+    .s-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 18px 18px 0 0; }
+
+    .c-blue::before   { background: var(--primary); }
+    .c-orange::before { background: var(--orange); }
+    .c-green::before  { background: var(--green); }
+    .c-red::before    { background: var(--red); }
+
+    .s-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 1rem; }
+    .si-blue   { background: var(--primary-soft); }
+    .si-orange { background: var(--orange-soft); }
+    .si-green  { background: var(--green-soft); }
+    .si-red    { background: var(--red-soft); }
+
+    .s-val { font-size: 1.8rem; font-weight: 800; color: var(--text); }
+    .s-lbl { font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-top: 0.2rem; }
+
+    /* ══ TWO COL ══ */
+    .two-col { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; padding: 2rem 2.5rem; }
+    .panel { background: var(--white); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+    .panel-head { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .panel-head h3 { font-size: 0.9rem; font-weight: 800; }
+    .active-body { padding: 1.5rem; }
+
+    /* Book Row */
+    .book-row { display: flex; align-items: center; gap: 1.2rem; padding: 1.2rem; background: #fafbff; border: 1px solid #eef1fb; border-radius: 16px; }
+    .book-cover { width: 48px; height: 64px; border-radius: 8px; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .book-info { flex: 1; }
+    .book-title  { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+    .book-author { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .cd-box { text-align: center; background: var(--orange-soft); padding: 0.7rem 1rem; border-radius: 12px; min-width: 70px; }
+    .cd-num { font-size: 1.5rem; font-weight: 800; color: var(--orange); }
+    .cd-lbl { font-size: 0.6rem; font-weight: 700; color: var(--orange); text-transform: uppercase; }
+
+    /* Table */
+    .table-section { padding: 0 2.5rem 3rem; }
+    .table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { padding: 1rem 1.5rem; background: #f8faff; text-align: left; font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    tbody td { padding: 1.2rem 1.5rem; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9; }
+
+    .sp { padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+    .sp-ok     { background: var(--green-soft); color: var(--green); }
+    .sp-active { background: var(--orange-soft); color: var(--orange); }
+
+    .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+    .empty-state span { font-size: 2.5rem; display: block; margin-bottom: 1rem; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══ RESPONSIVE ══ */
+    @media (max-width: 768px) {
+      .hero-banner  { margin: 1rem; padding: 1.75rem 1.5rem; }
+      .hero-name    { font-size: 1.5rem; }
+      .section-wrap { padding: 1.5rem 1rem 0; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+      .two-col      { grid-template-columns: 1fr; padding: 1rem; }
+      .table-section { padding: 0 1rem 2rem; }
+      .topbar       { padding: 1rem; }
+      tbody td, thead th { padding: 0.75rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<navbar-component></navbar-component>
+
+<div class="content">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Dashboard Siswa</h1>
+      <p>Ringkasan aktivitas peminjaman kamu</p>
+    </div>
+    <div class="date-chip" id="dateChip">—</div>
+  </div>
+
+  <div class="hero-banner">
+    <div class="hero-content">
+      <div class="hero-greeting">Selamat Datang di Portal Siswa</div>
+      <div class="hero-name" id="heroName">Memuat...</div>
+      <div class="hero-meta" id="heroMeta">SMK Bina Informatika</div>
+      <div class="hero-pills">
+        <span class="h-pill">📖 Status: Aktif</span>
+        <span class="h-pill">📍 Perpustakaan Digital</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="summary-grid">
+      <div class="s-card c-blue">
+        <div class="s-icon si-blue">📚</div>
+        <div class="s-val" id="statDipinjam">—</div>
+        <div class="s-lbl">Sedang Dipinjam</div>
+      </div>
+      <div class="s-card c-orange">
+        <div class="s-icon si-orange">⏳</div>
+        <div class="s-val" id="statSisaHari">—</div>
+        <div class="s-lbl">Sisa Hari Kembali</div>
+      </div>
+      <div class="s-card c-green">
+        <div class="s-icon si-green">✅</div>
+        <div class="s-val" id="statTotal">—</div>
+        <div class="s-lbl">Total Selesai</div>
+      </div>
+      <div class="s-card c-red">
+        <div class="s-icon si-red">💸</div>
+        <div class="s-val" id="statDenda">—</div>
+        <div class="s-lbl">Denda Aktif</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>📖 Buku Aktif</h3>
+        <span id="activeBadge" class="date-chip">0 Buku</span>
+      </div>
+      <div class="active-body" id="activeLoanSection">
+        <div class="empty-state">
+          <span>📭</span>
+          <p>Belum ada buku yang dipinjam</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>📋 Aturan Perpustakaan</h3>
+      </div>
+      <div class="active-body">
+        <p style="font-size: 0.85rem; margin-bottom: 0.8rem; color: var(--muted);">1. Maksimal peminjaman 2 buku.</p>
+        <p style="font-size: 0.85rem; margin-bottom: 0.8rem; color: var(--muted);">2. Durasi pinjam selama 7 hari.</p>
+        <p style="font-size: 0.85rem; margin-bottom: 0.8rem; color: var(--muted);">3. Denda Rp1.000,- per hari keterlambatan.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-wrap">
+      <div class="panel-head"><h3>🗂 Riwayat Peminjaman</h3></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Judul Buku</th>
+            <th>Tgl Pinjam</th>
+            <th>Batas Kembali</th>
+            <th>Status</th>
+            <th>Denda</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="5" style="text-align:center; padding:3rem;">Memuat riwayat...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { db } from "../firebase.js";
+  import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // ── Cek Session ──
+  const userData = JSON.parse(sessionStorage.getItem("userActive"));
+  if (!userData) window.location.href = "../login.html";
+
+  const namaSiswa  = userData.nama     || "Siswa";
+  const nisSiswa   = userData.password || "—"; 
+
+  // ── Set Tanggal ──
+  const tanggal = new Date().toLocaleDateString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric"
+  });
+  document.getElementById("dateChip").textContent = tanggal;
+
+  // ── Set Hero ──
+  document.getElementById("heroName").textContent = namaSiswa;
+  document.getElementById("heroMeta").textContent = "SMK Bina Informatika · " + tanggal;
+
+  // ── Helper format tanggal ──
+  const fmt = (ts) => {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const diffDays = (a, b) => Math.ceil((b - a) / (1000 * 60 * 60 * 24));
+
+  async function loadDashboard() {
+    if (!nisSiswa || nisSiswa === "—") {
+      document.getElementById("historyBody").innerHTML = `<tr><td colspan="5" style="text-align:center;">NIS tidak ditemukan</td></tr>`;
+      return;
+    }
+
+    try {
+      // PERBAIKAN: Hapus orderBy di query Firestore agar tidak perlu Index
+      const q = query(
+        collection(db, "peminjaman"),
+        where("siswa_id", "==", nisSiswa)
+      );
+
+      const snap = await getDocs(q);
+      
+      // PERBAIKAN: Urutkan secara manual di JavaScript
+      const allLoans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const loans = allLoans.sort((a, b) => {
+        const dateA = a.tgl_pinjam?.toDate ? a.tgl_pinjam.toDate() : new Date(a.tgl_pinjam);
+        const dateB = b.tgl_pinjam?.toDate ? b.tgl_pinjam.toDate() : new Date(b.tgl_pinjam);
+        return dateB - dateA;
+      });
+
+      const active = loans.filter(l => l.status === "dipinjam");
+
+      document.getElementById("statDipinjam").textContent = active.length;
+      document.getElementById("statTotal").textContent    = loans.filter(l => l.status === "kembali").length;
+      document.getElementById("activeBadge").textContent  = `${active.length} Buku`;
+
+      const totalDenda = loans.reduce((sum, l) => sum + (l.denda || 0), 0);
+      document.getElementById("statDenda").textContent = `Rp${totalDenda.toLocaleString()}`;
+
+      // ── Buku Aktif ──
+      if (active.length > 0) {
+        const loan = active[0];
+        const tglKembali = loan.tgl_kembali?.toDate ? loan.tgl_kembali.toDate() : new Date(loan.tgl_kembali);
+        const sisa = diffDays(new Date(), tglKembali);
+
+        document.getElementById("statSisaHari").textContent = sisa > 0 ? sisa : "!";
+        document.getElementById("activeLoanSection").innerHTML = `
+          <div class="book-row">
+            <div class="book-cover">📖</div>
+            <div class="book-info">
+              <div class="book-title">${loan.judul}</div>
+              <div class="book-author">Batas Kembali: ${fmt(loan.tgl_kembali)}</div>
+            </div>
+            <div class="cd-box">
+              <div class="cd-num">${sisa > 0 ? sisa : "0"}</div>
+              <div class="cd-lbl">Hari lagi</div>
+            </div>
+          </div>
+        `;
+      } else {
+        document.getElementById("statSisaHari").textContent = "—";
+        document.getElementById("activeLoanSection").innerHTML = `
+          <div class="empty-state">
+            <span>📭</span>
+            <p>Belum ada buku yang dipinjam</p>
+          </div>
+        `;
+      }
+
+      // ── Riwayat ──
+      if (loans.length === 0) {
+        document.getElementById("historyBody").innerHTML = `
+          <tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--muted);">
+            Belum ada riwayat peminjaman
+          </td></tr>
+        `;
+      } else {
+        document.getElementById("historyBody").innerHTML = loans.map(l => `
+          <tr>
+            <td><div class="book-title">${l.judul || "—"}</div></td>
+            <td>${fmt(l.tgl_pinjam)}</td>
+            <td>${fmt(l.tgl_kembali)}</td>
+            <td><span class="sp ${l.status === 'dipinjam' ? 'sp-active' : 'sp-ok'}">${(l.status || "").toUpperCase()}</span></td>
+            <td style="font-weight:700; color:${(l.denda || 0) > 0 ? 'var(--red)' : 'var(--muted)'}">
+              Rp${(l.denda || 0).toLocaleString()}
+            </td>
+          </tr>
+        `).join("");
+      }
+
+    } catch (err) {
+      console.error("Error loadDashboard:", err);
+      document.getElementById("historyBody").innerHTML = `
+        <tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--red);">
+          ⚠️ Gagal memuat data: ${err.message}
+        </td></tr>
+      `;
+    }
+  }
+
+  loadDashboard();
+</script>
+
+</body>
+</html>

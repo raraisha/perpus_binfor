@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin</title>
+  <script src="/admin/sidebar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --blue:   #4B7FF2;
+      --purple: #B36FF2;
+      --green:  #10b981;
+      --amber:  #f59e0b;
+      --red:    #ef4444;
+      --text:   #1e1e2e;
+      --muted:  #8b90a7;
+      --border: #ececf5;
+      --bg:     #f5f6fa;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .content {
+      margin-left: 240px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2.5rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: 0 1px 12px rgba(75,127,242,0.05);
+    }
+
+    .topbar-left { display: flex; flex-direction: column; gap: 2px; }
+    .topbar h1 { font-size: 1.05rem; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+    .topbar p  { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+
+    .date-chip {
+      font-size: 0.72rem; font-weight: 600;
+      background: #f0f4fe; color: var(--blue);
+      border: 1px solid #dde3f8;
+      padding: 0.38rem 0.85rem;
+      border-radius: 8px;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    .notif-btn {
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      background: #f5f6fa;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .notif-btn:hover { background: #eef2fe; border-color: #dde3f8; }
+    .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--red);
+      border: 1.5px solid white;
+    }
+
+    /* ── MAIN ── */
+    .main { padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.75rem; }
+
+    /* ── WELCOME BANNER ── */
+    .welcome-banner {
+      background: linear-gradient(135deg, #4B7FF2 0%, #B36FF2 100%);
+      border-radius: 20px;
+      padding: 1.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-banner::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+    }
+
+    .welcome-banner::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; right: 100px;
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .welcome-text { position: relative; z-index: 1; }
+    .welcome-text h2 { font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; }
+    .welcome-text p  { font-size: 0.8rem; color: rgba(255,255,255,0.75); font-weight: 500; }
+
+    .welcome-pills { display: flex; gap: 0.5rem; margin-top: 0.85rem; flex-wrap: wrap; }
+    .pill {
+      font-size: 0.68rem; font-weight: 700;
+      background: rgba(255,255,255,0.18);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 0.28rem 0.7rem;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .welcome-illo {
+      font-size: 3.5rem;
+      position: relative; z-index: 1;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-6px); }
+    }
+
+    /* ── STAT GRID ── */
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(75,127,242,0.1);
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 0 0 16px 16px;
+    }
+
+    .c1::after { background: linear-gradient(90deg, #4B7FF2, #93c5fd); }
+    .c2::after { background: linear-gradient(90deg, #10b981, #6ee7b7); }
+    .c3::after { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+    .c4::after { background: linear-gradient(90deg, #ef4444, #fca5a5); }
+
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .si1 { background: #eef3ff; }
+    .si2 { background: #ecfdf5; }
+    .si3 { background: #fffbeb; }
+    .si4 { background: #fef2f2; }
+
+    .stat-badge {
+      font-size: 0.62rem; font-weight: 700;
+      padding: 0.22rem 0.55rem;
+      border-radius: 20px;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .sb1 { background: #eef3ff; color: #4B7FF2; }
+    .sb2 { background: #ecfdf5; color: #10b981; }
+    .sb3 { background: #fffbeb; color: #f59e0b; }
+    .sb4 { background: #fef2f2; color: #ef4444; }
+
+    .stat-val { font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+    .sv1 { color: #4B7FF2; }
+    .sv2 { color: #10b981; }
+    .sv3 { color: #f59e0b; }
+    .sv4 { color: #ef4444; }
+
+    .stat-lbl { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+
+    .stat-trend {
+      margin-top: 0.65rem;
+      font-size: 0.67rem;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex; align-items: center; gap: 4px;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+    }
+    .trend-up   { color: #10b981; }
+    .trend-down { color: #ef4444; }
+
+    /* ── BOTTOM ROW ── */
+    .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1.1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .panel-title { font-size: 0.85rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .panel-title span { font-size: 15px; }
+
+    .panel-link { font-size: 0.72rem; font-weight: 700; color: var(--blue); text-decoration: none; }
+    .panel-link:hover { text-decoration: underline; }
+
+    /* ── ACTIVITY LIST ── */
+    .activity-list { padding: 0.5rem 0; }
+
+    .activity-item {
+      display: flex; align-items: center; gap: 0.85rem;
+      padding: 0.7rem 1.5rem;
+      transition: background 0.15s;
+    }
+    .activity-item:hover { background: #f9f9fb; }
+
+    .act-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    .act-info { flex: 1; min-width: 0; }
+    .act-name { font-size: 0.8rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .act-desc { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+
+    .act-time { font-size: 0.65rem; font-weight: 600; color: #c5c7d4; flex-shrink: 0; }
+
+    /* ── QUICK ACTIONS ── */
+    .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding: 1.1rem; }
+
+    .qa-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.5rem;
+      padding: 1.1rem 0.75rem;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: #fafafa;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .qa-btn:hover { background: #eef2fe; border-color: #dde3f8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(75,127,242,0.1); }
+    .qa-btn:hover .qa-label { color: var(--blue); }
+
+    .qa-icon { font-size: 1.4rem; }
+    .qa-label { font-size: 0.73rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.3; }
+
+    /* ── ENTRY ANIMATIONS ── */
+    .welcome-banner { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+    .stat-card:nth-child(1) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+    .stat-card:nth-child(2) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.10s both; }
+    .stat-card:nth-child(3) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
+    .stat-card:nth-child(4) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.20s both; }
+    .panel         { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1100px) {
+      .grid4 { grid-template-columns: repeat(2, 1fr); }
+      .bottom-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <admin-sidebar active="dashboard"></admin-sidebar>
+
+  <div class="content">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Dashboard Admin</h1>
+        <p>Selamat datang di panel administrasi perpustakaan</p>
+      </div>
+      <div class="topbar-right">
+        <span class="date-chip">📅 <span id="dateChip">—</span></span>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- WELCOME BANNER -->
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h2>Halo, selamat datang kembali! 👋</h2>
+          <p>Semua sistem berjalan normal. Berikut ringkasan aktivitas hari ini.</p>
+          <div class="welcome-pills">
+            <span class="pill">✅ Sistem Online</span>
+            <span class="pill">📊 Data Terkini</span>
+            <span class="pill">🔄 Sync Otomatis</span>
+          </div>
+        </div>
+        <div class="welcome-illo">📚</div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid4">
+        <div class="stat-card c1">
+          <div class="stat-top">
+            <div class="stat-icon si1">📚</div>
+            <span class="stat-badge sb1">Total</span>
+          </div>
+          <div class="stat-val sv1">2.840</div>
+          <div class="stat-lbl">Koleksi Buku</div>
+          <div class="stat-trend"><span class="trend-up">↑ 12 buku</span> ditambahkan bulan ini</div>
+        </div>
+        <div class="stat-card c2">
+          <div class="stat-top">
+            <div class="stat-icon si2">👥</div>
+            <span class="stat-badge sb2">Aktif</span>
+          </div>
+          <div class="stat-val sv2">480</div>
+          <div class="stat-lbl">Anggota Terdaftar</div>
+          <div class="stat-trend"><span class="trend-up">↑ 8 anggota</span> baru minggu ini</div>
+        </div>
+        <div class="stat-card c3">
+          <div class="stat-top">
+            <div class="stat-icon si3">📋</div>
+            <span class="stat-badge sb3">Aktif</span>
+          </div>
+          <div class="stat-val sv3">127</div>
+          <div class="stat-lbl">Sedang Dipinjam</div>
+          <div class="stat-trend"><span class="trend-up">↑ 5 peminjaman</span> sejak kemarin</div>
+        </div>
+        <div class="stat-card c4">
+          <div class="stat-top">
+            <div class="stat-icon si4">⚠️</div>
+            <span class="stat-badge sb4">Terlambat</span>
+          </div>
+          <div class="stat-val sv4">14</div>
+          <div class="stat-lbl">Buku Jatuh Tempo</div>
+          <div class="stat-trend"><span class="trend-down">↑ 3 buku</span> baru jatuh tempo</div>
+        </div>
+      </div>
+
+      <!-- BOTTOM ROW -->
+      <div class="bottom-row">
+
+        <!-- Aktivitas Terbaru -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><span>🕐</span> Aktivitas Terbaru</div>
+            <a href="./pinjaman.html" class="panel-link">Lihat semua →</a>
+          </div>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="act-icon" style="background:#eef3ff;">📖</div>
+              <div class="act-info">
+                <div class="act-name">Budi Santoso meminjam buku</div>
+                <div class="act-desc">Pemrograman Web — Kelas XI RPL</div>
+              </div>
+              <span class="act-time">2 mnt lalu</span>
+            </div>
+            <div class="activity-item">
+              <div class="act-icon" style="background:#ecfdf5;">↩️</div>
+              <div class="act-info">
+                <div class="act-name">Sari Dewi mengembalikan buku</div>
+                <div class="act-desc">Basis Data — Kelas XII TKJ</div>
+              </div>
+              <span class="act-time">18 mnt lalu</span>
+            </div>
+            <div class="activity-item">
+              <div class="act-icon" style="background:#fffbeb;">👤</div>
+              <div class="act-info">
+                <div class="act-name">Anggota baru terdaftar</div>
+                <div class="act-desc">Ahmad Rizki — Kelas X MM</div>
+              </div>
+              <span class="act-time">1 jam lalu</span>
+            </div>
+            <div class="activity-item">
+              <div class="act-icon" style="background:#fef2f2;">⚠️</div>
+              <div class="act-info">
+                <div class="act-name">Jatuh tempo terdeteksi</div>
+                <div class="act-desc">3 buku belum dikembalikan</div>
+              </div>
+              <span class="act-time">2 jam lalu</span>
+            </div>
+            <div class="activity-item">
+              <div class="act-icon" style="background:#eef3ff;">📚</div>
+              <div class="act-info">
+                <div class="act-name">Buku baru ditambahkan</div>
+                <div class="act-desc">Jaringan Komputer — 5 eksemplar</div>
+              </div>
+              <span class="act-time">3 jam lalu</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aksi Cepat -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><span>⚡</span> Aksi Cepat</div>
+          </div>
+          <div class="qa-grid">
+            <a href="./buku.html" class="qa-btn">
+              <span class="qa-icon">📚</span>
+              <span class="qa-label">Tambah Buku</span>
+            </a>
+            <a href="./pinjaman.html" class="qa-btn">
+              <span class="qa-icon">📋</span>
+              <span class="qa-label">Catat Peminjaman</span>
+            </a>
+            <a href="./pengembalian.html" class="qa-btn">
+              <span class="qa-icon">↩️</span>
+              <span class="qa-label">Proses Pengembalian</span>
+            </a>
+            <a href="./anggota.html" class="qa-btn">
+              <span class="qa-icon">👥</span>
+              <span class="qa-label">Daftar Anggota</span>
+            </a>
+            <a href="./laporan.html" class="qa-btn">
+              <span class="qa-icon">📊</span>
+              <span class="qa-label">Lihat Laporan</span>
+            </a>
+            <a href="./pengaturan.html" class="qa-btn">
+              <span class="qa-icon">⚙️</span>
+              <span class="qa-label">Pengaturan</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("dateChip").textContent = new Date().toLocaleDateString("id-ID", {
+      weekday: "short", day: "numeric", month: "long", year: "numeric"
+    });
+  </script>
+
+</body>
+</html>

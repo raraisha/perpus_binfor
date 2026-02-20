@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengembalian Buku — Perpus SMK</title>
+  <script src="../navbar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4B7FF2; --primary-soft: #eef3ff;
+      --accent: #B36FF2; --accent-soft: #f7f0ff;
+      --green: #10b981; --green-soft: #ecfdf5;
+      --orange: #f59e0b; --orange-soft: #fffbeb;
+      --red: #ef4444; --red-soft: #fef2f2;
+      --white: #fff; --gray: #f1f5f9;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gray); color:var(--text); min-height:100vh; }
+    .main { max-width:760px; margin:0 auto; padding:2rem 1.5rem 5rem; }
+
+    /* HERO */
+    .hero { background:linear-gradient(135deg,#1e1b4b,#3730a3); border-radius:20px; padding:1.75rem 2rem; margin-bottom:1.75rem; color:white; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .hero-left h1 { font-size:1.2rem; font-weight:800; margin-bottom:0.25rem; }
+    .hero-left p  { font-size:0.82rem; opacity:0.7; }
+    .hero-badge { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); border-radius:12px; padding:0.75rem 1.25rem; text-align:center; flex-shrink:0; }
+    .hero-badge .hb-num { font-size:1.6rem; font-weight:800; }
+    .hero-badge .hb-lbl { font-size:0.7rem; opacity:0.7; margin-top:0.1rem; }
+
+    /* SECTION TITLE */
+    .section-title { font-size:0.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.85rem; }
+
+    /* LOADING */
+    .loading { text-align:center; padding:3rem; color:var(--muted); }
+    .spinner { display:inline-block; width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; margin-bottom:0.75rem; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* EMPTY */
+    .empty-state { text-align:center; padding:3.5rem 2rem; background:var(--white); border:1px solid var(--border); border-radius:20px; }
+    .empty-icon  { font-size:3.5rem; margin-bottom:1rem; }
+    .empty-title { font-size:1rem; font-weight:800; margin-bottom:0.4rem; }
+    .empty-sub   { font-size:0.82rem; color:var(--muted); }
+
+    /* PINJAM CARDS */
+    .pinjam-list { display:flex; flex-direction:column; gap:1rem; }
+
+    .pinjam-card {
+      background:var(--white);
+      border:1.5px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+      transition:0.2s;
+      animation:fadeUp 0.3s ease both;
+    }
+    .pinjam-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.07); }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+    /* Status bar di atas kartu */
+    .pinjam-card.status-aman    { border-top:4px solid var(--green); }
+    .pinjam-card.status-segera  { border-top:4px solid var(--orange); }
+    .pinjam-card.status-telat   { border-top:4px solid var(--red); }
+
+    .card-inner { padding:1.25rem 1.5rem; display:flex; align-items:flex-start; gap:1.1rem; }
+
+    /* Book icon */
+    .book-icon { width:46px; height:54px; border-radius:8px; background:linear-gradient(135deg,var(--accent-soft),var(--primary-soft)); display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; border:1px solid var(--border); }
+
+    .card-info { flex:1; min-width:0; }
+    .book-title { font-size:0.95rem; font-weight:800; margin-bottom:0.2rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .book-penerbit { font-size:0.72rem; color:var(--muted); margin-bottom:0.75rem; }
+
+    .meta-row { display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.85rem; }
+    .meta-chip { display:flex; align-items:center; gap:0.3rem; background:var(--gray); border-radius:7px; padding:0.2rem 0.6rem; font-size:0.72rem; font-weight:600; color:var(--muted); }
+
+    /* Denda & status badge */
+    .status-badge { padding:0.22rem 0.65rem; border-radius:20px; font-size:0.68rem; font-weight:800; }
+    .badge-aman   { background:var(--green-soft); color:var(--green); }
+    .badge-segera { background:var(--orange-soft); color:var(--orange); }
+    .badge-telat  { background:var(--red-soft); color:var(--red); }
+
+    /* Progress bar sisa hari */
+    .progress-wrap { margin-bottom:0.85rem; }
+    .progress-label { display:flex; justify-content:space-between; font-size:0.68rem; color:var(--muted); margin-bottom:0.3rem; font-weight:600; }
+    .progress-track { background:var(--gray); border-radius:20px; height:6px; overflow:hidden; }
+    .progress-fill  { height:100%; border-radius:20px; transition:width 0.6s ease; }
+
+    .btn-kembalikan {
+      width:100%;
+      padding:0.75rem;
+      border-radius:11px;
+      border:none;
+      font-family:inherit;
+      font-size:0.85rem;
+      font-weight:800;
+      cursor:pointer;
+      transition:0.18s;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:0.5rem;
+    }
+    .btn-kembalikan.aman   { background:var(--green); color:white; }
+    .btn-kembalikan.segera { background:var(--orange); color:white; }
+    .btn-kembalikan.telat  { background:var(--red); color:white; }
+    .btn-kembalikan:hover  { transform:translateY(-1px); filter:brightness(1.05); }
+
+    /* ── MODAL KONFIRMASI ── */
+    .overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(8px); z-index:999; align-items:center; justify-content:center; padding:1rem; }
+    .overlay.show { display:flex; }
+
+    .confirm-box {
+      background:white;
+      border-radius:24px;
+      width:100%;
+      max-width:420px;
+      overflow:hidden;
+      animation:popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:none} }
+
+    .confirm-header { padding:1.5rem 1.75rem 0; text-align:center; }
+    .confirm-emoji  { font-size:3.5rem; margin-bottom:0.75rem; display:block; }
+    .confirm-title  { font-size:1.05rem; font-weight:800; margin-bottom:0.35rem; }
+    .confirm-sub    { font-size:0.82rem; color:var(--muted); }
+
+    .confirm-detail {
+      margin:1.25rem 1.75rem;
+      background:var(--gray);
+      border-radius:14px;
+      padding:1rem 1.25rem;
+    }
+    .cd-row { display:flex; justify-content:space-between; align-items:center; padding:0.35rem 0; font-size:0.82rem; border-bottom:1px dashed #e2e8f0; }
+    .cd-row:last-child { border-bottom:none; }
+    .cd-label { color:var(--muted); font-weight:600; }
+    .cd-val   { font-weight:800; }
+    .cd-val.denda { color:var(--red); }
+    .cd-val.gratis { color:var(--green); }
+
+    .confirm-note {
+      margin:0 1.75rem 1.25rem;
+      background:var(--orange-soft);
+      border:1px solid #fde68a;
+      border-radius:10px;
+      padding:0.75rem 1rem;
+      font-size:0.75rem;
+      color:#92400e;
+      line-height:1.6;
+      display:none;
+    }
+    .confirm-note.show { display:block; }
+
+    .confirm-actions { padding:0 1.75rem 1.75rem; display:flex; gap:0.75rem; }
+    .btn-batal    { flex:1; padding:0.8rem; border-radius:12px; border:1.5px solid var(--border); background:white; font-family:inherit; font-weight:700; cursor:pointer; color:var(--muted); }
+    .btn-konfirm  { flex:2; padding:0.8rem; border-radius:12px; border:none; font-family:inherit; font-weight:800; cursor:pointer; color:white; font-size:0.88rem; transition:0.2s; }
+    .btn-konfirm:hover { filter:brightness(1.05); transform:translateY(-1px); }
+    .btn-konfirm:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+    /* ── SUKSES MODAL ── */
+    .success-box { background:white; border-radius:24px; width:100%; max-width:380px; padding:2.5rem; text-align:center; animation:popIn 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+    .success-emoji { font-size:4rem; margin-bottom:1rem; display:block; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:2rem; right:1.5rem; background:#1e293b; color:white; padding:0.85rem 1.25rem; border-radius:12px; font-size:0.82rem; font-weight:600; z-index:9999; transform:translateY(80px); opacity:0; transition:0.3s; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-left:4px solid var(--green); }
+    .toast.error   { border-left:4px solid var(--red); }
+
+    @media (max-width:520px) {
+      .main { padding:1.25rem 1rem 5rem; }
+      .hero { flex-direction:column; align-items:flex-start; }
+      .card-inner { gap:0.75rem; }
+      .confirm-actions { flex-direction:column-reverse; }
+    }
+  </style>
+</head>
+<body>
+
+<navbar-component></navbar-component>
+
+<div class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-left">
+      <h1>📚 Pengembalian Buku</h1>
+      <p id="heroSub">Memuat data peminjaman...</p>
+    </div>
+    <div class="hero-badge">
+      <div class="hb-num" id="heroBadgeNum">—</div>
+      <div class="hb-lbl">Buku Dipinjam</div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div><br>Mengambil data peminjaman aktif...
+  </div>
+
+  <!-- LIST -->
+  <div id="mainContent" style="display:none;">
+    <div class="section-title">Peminjaman Aktif</div>
+    <div id="pinjamList" class="pinjam-list"></div>
+  </div>
+
+</div>
+
+<!-- MODAL KONFIRMASI -->
+<div class="overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-header">
+      <span class="confirm-emoji">📖</span>
+      <div class="confirm-title">Kembalikan Buku?</div>
+      <div class="confirm-sub">Pastikan kamu sudah membawa buku ke perpustakaan</div>
+    </div>
+
+    <div class="confirm-detail">
+      <div class="cd-row"><span class="cd-label">Judul</span><span class="cd-val" id="cdJudul" style="max-width:60%;text-align:right;font-size:0.78rem;">—</span></div>
+      <div class="cd-row"><span class="cd-label">Tanggal Pinjam</span><span class="cd-val" id="cdTglPinjam">—</span></div>
+      <div class="cd-row"><span class="cd-label">Batas Kembali</span><span class="cd-val" id="cdTglKembali">—</span></div>
+      <div class="cd-row"><span class="cd-label">Lama Pinjam</span><span class="cd-val" id="cdLama">—</span></div>
+      <div class="cd-row" style="margin-top:0.25rem;padding-top:0.5rem;">
+        <span class="cd-label" style="font-weight:800;color:var(--text);">Denda</span>
+        <span class="cd-val" id="cdDenda" style="font-size:1rem;">—</span>
+      </div>
+    </div>
+
+    <div class="confirm-note" id="confirmNote">
+      ⚠️ Buku ini <b>sudah melewati batas kembali</b>. Denda akan dihitung otomatis.
+      Serahkan buku ke petugas perpustakaan untuk konfirmasi.
+    </div>
+
+    <div class="confirm-actions">
+      <button class="btn-batal" onclick="closeConfirm()">Batal</button>
+      <button class="btn-konfirm" id="btnKonfirm" onclick="doReturn()">✅ Ya, Kembalikan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUKSES -->
+<div class="overlay" id="successOverlay">
+  <div class="success-box">
+    <span class="success-emoji">🎉</span>
+    <h2 style="margin-bottom:0.5rem;">Berhasil Dikembalikan!</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.75rem;">Terima kasih sudah mengembalikan buku tepat waktu.</p>
+    <div id="successDendaInfo" style="display:none;background:var(--red-soft);border-radius:10px;padding:0.85rem;margin-bottom:1rem;font-size:0.82rem;color:var(--red);font-weight:700;"></div>
+    <button onclick="window.location.reload()" style="width:100%;padding:0.85rem;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--primary));color:white;font-weight:800;cursor:pointer;font-size:0.9rem;">Selesai</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { db } from "../firebase.js";
+  import {
+    collection, query, where, getDocs,
+    doc, updateDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // ── Auth check ──
+  const userData = JSON.parse(sessionStorage.getItem("userActive"));
+  if (!userData) window.location.href = "../login.html";
+  const nisSiswa = userData.password || userData.id || "";
+
+  // ── State ──
+  let selectedPinjam = null;
+
+  // ── Helpers ──
+  const fmt = (ts) => {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("id-ID", { day:"2-digit", month:"long", year:"numeric" });
+  };
+  const toDate = (ts) => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+  const diffDays = (a, b) => Math.ceil((b - a) / 86400000);
+  const DENDA_PER_HARI = 1000; // Rp 1.000/hari
+
+  // ── Load data ──
+  async function loadPeminjaman() {
+    try {
+      const snap = await getDocs(
+        query(collection(db, "peminjaman"),
+          where("siswa_id", "==", nisSiswa),
+          where("status", "==", "dipinjam")
+        )
+      );
+
+      const data = snap.docs.map(d => ({ _id:d.id, ...d.data() }));
+
+      // Update hero
+      document.getElementById("heroBadgeNum").textContent = data.length;
+      document.getElementById("heroSub").textContent =
+        data.length > 0
+          ? `Hai, ${userData.nama}! Kamu punya ${data.length} buku yang belum dikembalikan.`
+          : `Hai, ${userData.nama}! Semua buku sudah dikembalikan. 🎉`;
+
+      document.getElementById("loadingState").style.display  = "none";
+      document.getElementById("mainContent").style.display   = "block";
+
+      if (data.length === 0) {
+        document.getElementById("pinjamList").innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">Tidak ada peminjaman aktif</div>
+            <div class="empty-sub">Semua buku sudah dikembalikan. Yuk pinjam buku baru!</div>
+          </div>`;
+        return;
+      }
+
+      // Sort: terlambat dulu
+      data.sort((a, b) => {
+        const da = toDate(a.tgl_kembali);
+        const db_ = toDate(b.tgl_kembali);
+        return (da||0) - (db_||0);
+      });
+
+      document.getElementById("pinjamList").innerHTML = data.map((d, i) =>
+        buildCard(d, i)
+      ).join("");
+
+    } catch (err) {
+      document.getElementById("loadingState").innerHTML =
+        `<div style="color:var(--red);text-align:center;padding:2rem;">⚠️ Gagal memuat: ${err.message}</div>`;
+    }
+  }
+
+  function buildCard(d, idx) {
+    const now      = new Date();
+    const tglPinjam = toDate(d.tgl_pinjam);
+    const tglKembali= toDate(d.tgl_kembali);
+    const sisaHari  = tglKembali ? diffDays(now, tglKembali) : null;
+    const telat     = sisaHari !== null && sisaHari < 0;
+    const segera    = sisaHari !== null && sisaHari >= 0 && sisaHari <= 3;
+
+    const statusClass  = telat ? "status-telat" : segera ? "status-segera" : "status-aman";
+    const badgeClass   = telat ? "badge-telat"  : segera ? "badge-segera"  : "badge-aman";
+    const btnClass     = telat ? "telat"         : segera ? "segera"        : "aman";
+    const badgeText    = telat
+      ? `Terlambat ${Math.abs(sisaHari)} hari`
+      : segera
+      ? `Sisa ${sisaHari} hari`
+      : `Sisa ${sisaHari} hari`;
+
+    // Denda estimasi
+    const dendaHari = telat ? Math.abs(sisaHari) : 0;
+    const dendaEst  = dendaHari * DENDA_PER_HARI;
+
+    // Progress bar (durasi pinjam 7 hari default)
+    const totalDur  = tglPinjam && tglKembali ? diffDays(tglPinjam, tglKembali) : 7;
+    const sudahJalan= tglPinjam ? diffDays(tglPinjam, now) : 0;
+    const pct       = Math.min(100, Math.max(0, (sudahJalan / totalDur) * 100));
+    const barColor  = telat ? "var(--red)" : segera ? "var(--orange)" : "var(--green)";
+
+    return `
+      <div class="pinjam-card ${statusClass}" style="animation-delay:${idx*0.07}s;">
+        <div class="card-inner">
+          <div class="book-icon">📗</div>
+          <div class="card-info">
+            <div class="book-title">${d.judul || "—"}</div>
+            <div class="book-penerbit">${d.penerbit || "—"}</div>
+
+            <div class="meta-row">
+              <span class="meta-chip">📅 Pinjam: ${fmt(d.tgl_pinjam)}</span>
+              <span class="meta-chip">⏰ Batas: ${fmt(d.tgl_kembali)}</span>
+              <span class="status-badge ${badgeClass}">${badgeText}</span>
+              ${telat ? `<span class="status-badge badge-telat">Denda ~Rp${dendaEst.toLocaleString()}</span>` : ""}
+            </div>
+
+            <div class="progress-wrap">
+              <div class="progress-label">
+                <span>${telat ? "Melewati batas" : "Waktu pinjam"}</span>
+                <span style="color:${barColor};font-weight:800;">${telat ? Math.abs(sisaHari)+" hari terlambat" : sisaHari+" hari lagi"}</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width:${pct}%;background:${barColor};"></div>
+              </div>
+            </div>
+
+            <button class="btn-kembalikan ${btnClass}" onclick="openConfirm('${d._id}')">
+              📬 Kembalikan Buku Ini
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Open Confirm Modal ──
+  window.openConfirm = (id) => {
+    const allData = [...document.querySelectorAll(".pinjam-card")];
+    // Ambil data dari state — simpan semua data di window
+    const d = window._pinjamData?.find(x => x._id === id);
+    if (!d) return;
+
+    selectedPinjam = d;
+
+    const now        = new Date();
+    const tglKembali = toDate(d.tgl_kembali);
+    const tglPinjam  = toDate(d.tgl_pinjam);
+    const sisaHari   = tglKembali ? diffDays(now, tglKembali) : 0;
+    const telat      = sisaHari < 0;
+    const dendaHari  = telat ? Math.abs(sisaHari) : 0;
+    const dendaTotal = dendaHari * DENDA_PER_HARI;
+    const lamaPinjam = tglPinjam ? diffDays(tglPinjam, now) : "?";
+
+    document.getElementById("cdJudul").textContent     = d.judul || "—";
+    document.getElementById("cdTglPinjam").textContent = fmt(d.tgl_pinjam);
+    document.getElementById("cdTglKembali").textContent= fmt(d.tgl_kembali);
+    document.getElementById("cdLama").textContent      = `${lamaPinjam} hari`;
+    document.getElementById("cdDenda").textContent     = dendaTotal > 0
+      ? `Rp${dendaTotal.toLocaleString()}`
+      : "Gratis ✅";
+    document.getElementById("cdDenda").className = `cd-val ${dendaTotal > 0 ? "denda" : "gratis"}`;
+
+    document.getElementById("confirmNote").classList.toggle("show", telat);
+
+    const btnK = document.getElementById("btnKonfirm");
+    btnK.style.background = telat
+      ? "var(--red)"
+      : sisaHari <= 3
+      ? "var(--orange)"
+      : "var(--green)";
+    btnK.textContent = telat
+      ? `⚠️ Ya, Kembalikan (+Denda Rp${dendaTotal.toLocaleString()})`
+      : "✅ Ya, Kembalikan";
+
+    document.getElementById("confirmOverlay").classList.add("show");
+  };
+
+  window.closeConfirm = () => {
+    document.getElementById("confirmOverlay").classList.remove("show");
+    selectedPinjam = null;
+  };
+
+  // ── Do Return ──
+  window.doReturn = async () => {
+    if (!selectedPinjam) return;
+    const btn = document.getElementById("btnKonfirm");
+    btn.disabled = true;
+    btn.textContent = "Memproses...";
+
+    try {
+      const now        = new Date();
+      const tglKembali = toDate(selectedPinjam.tgl_kembali);
+      const sisaHari   = tglKembali ? diffDays(now, tglKembali) : 0;
+      const telat      = sisaHari < 0;
+      const dendaTotal = telat ? Math.abs(sisaHari) * DENDA_PER_HARI : 0;
+
+      await updateDoc(doc(db, "peminjaman", selectedPinjam._id), {
+        status:          "kembali",
+        tgl_kembali_aktual: serverTimestamp(),
+        denda:           dendaTotal,
+        updated_at:      serverTimestamp()
+      });
+
+      document.getElementById("confirmOverlay").classList.remove("show");
+
+      // Sukses modal
+      const dendaInfo = document.getElementById("successDendaInfo");
+      if (dendaTotal > 0) {
+        dendaInfo.style.display = "block";
+        dendaInfo.textContent   = `⚠️ Denda keterlambatan: Rp${dendaTotal.toLocaleString()}. Silakan bayar ke petugas perpustakaan.`;
+      } else {
+        dendaInfo.style.display = "none";
+      }
+      document.getElementById("successOverlay").classList.add("show");
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "✅ Ya, Kembalikan";
+      showToast("❌ Gagal: " + err.message, "error");
+    }
+  };
+
+  // ── Toast ──
+  function showToast(msg, type="success") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = `toast ${type} show`;
+    setTimeout(() => t.classList.remove("show"), 3200);
+  }
+
+  // Close overlay click outside
+  document.getElementById("confirmOverlay").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeConfirm();
+  });
+
+  // ── Init ──
+  // Simpan data di window agar bisa diakses di onclick
+  const _origLoad = loadPeminjaman;
+  (async () => {
+    try {
+      const snap = await getDocs(
+        query(collection(db, "peminjaman"),
+          where("siswa_id", "==", nisSiswa),
+          where("status", "==", "dipinjam")
+        )
+      );
+      window._pinjamData = snap.docs.map(d => ({ _id:d.id, ...d.data() }));
+
+      const data = window._pinjamData;
+      document.getElementById("heroBadgeNum").textContent = data.length;
+      document.getElementById("heroSub").textContent =
+        data.length > 0
+          ? `Hai, ${userData.nama}! Kamu punya ${data.length} buku yang belum dikembalikan.`
+          : `Hai, ${userData.nama}! Semua buku sudah dikembalikan. 🎉`;
+
+      document.getElementById("loadingState").style.display = "none";
+      document.getElementById("mainContent").style.display  = "block";
+
+      if (data.length === 0) {
+        document.getElementById("pinjamList").innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">Tidak ada peminjaman aktif</div>
+            <div class="empty-sub">Semua buku sudah dikembalikan. Yuk pinjam buku baru!</div>
+          </div>`;
+        return;
+      }
+
+      data.sort((a, b) => {
+        const da  = toDate(a.tgl_kembali);
+        const db_ = toDate(b.tgl_kembali);
+        return (da||0) - (db_||0);
+      });
+
+      document.getElementById("pinjamList").innerHTML = data.map((d, i) => buildCard(d, i)).join("");
+
+    } catch (err) {
+      document.getElementById("loadingState").innerHTML =
+        `<div style="color:var(--red);text-align:center;padding:2rem;">⚠️ Gagal memuat: ${err.message}</div>`;
+    }
+  })();
+</script>
+
+</body>
+</html>

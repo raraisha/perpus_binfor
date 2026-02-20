@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Importer</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        #log { background: #eee; padding: 10px; height: 300px; overflow-y: auto; border-radius: 5px; }
+        button { padding: 10px 20px; background: #4B7FF2; color: white; border: none; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Excel to Firestore Importer</h2>
+    <p>Pastikan data JSON sudah benar di dalam script.</p>
+    <button id="btnStart">Mulai Import Data</button>
+    
+    <h4>Proses:</h4>
+    <div id="log">Menunggu perintah...</div>
+
+    <script type="module">
+import { db } from "./firebase.js";
+// Ambil setDoc dan doc (BUKAN addDoc)
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const dataBuku = [
+  {
+    "NO.": "1",
+    "PENGARANG": "H.A. Sholeh Dimyati, dkk",
+    "JUDUL BUKU": "Pendidikan Agama Islam & Budi Pekerti SMK Kelas 10",
+    "PENERBIT": "Penertbit Erlangga",
+    "TAHUN TERBIT": "2021",
+    "SUMBER BUKU": "Sekolah",
+    "JUMLAH BUKU": "50",
+    "ISBN": "978-623-266-654-2"
+  } 
+];
+
+const logDiv = document.getElementById('log');
+const btn = document.getElementById('btnStart');
+
+btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    logDiv.innerHTML = "Memulai import dengan ID Kustom...<br>";
+
+    for (const buku of dataBuku) {
+        try {
+            // Ambil nomor dari JSON untuk dijadikan ID Dokumen
+            // Contoh: buku["NO."] nilainya "3", maka ID di Firebase akan jadi "3"
+            const customID = buku["NO."].toString(); 
+
+            // Gunakan setDoc(doc(db, "nama_koleksi", id_kustom), data)
+            await setDoc(doc(db, "buku", customID), {
+                judul: buku["JUDUL BUKU"],
+                pengarang: buku["PENGARANG"],
+                penerbit: buku["PENERBIT"],
+                tahun_terbit: buku["TAHUN TERBIT"],
+                sumber: buku["SUMBER BUKU"],
+                stok: Number(buku["JUMLAH BUKU"]), // Ubah string "50" jadi angka 50
+                isbn: buku["ISBN"],
+                no_urut: Number(buku["NO."]),
+                tgl_input: new Date()
+            });
+
+            logDiv.innerHTML += `<span style="color:green">✅ Berhasil ID [${customID}]: ${buku["JUDUL BUKU"]}</span><br>`;
+        } catch (error) {
+            logDiv.innerHTML += `<span style="color:red">❌ Gagal pada NO ${buku["NO."]} : ${error.message}</span><br>`;
+        }
+    }
+
+    logDiv.innerHTML += "<br><b>Selesai! Sekarang ID dokumen tidak lagi acak.</b>";
+    btn.disabled = false;
+});
+    </script>
+</body>
+</html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Akun — Perpus SMK</title>
+  <script src="/admin/sidebar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4B7FF2; --primary-soft: #eef3ff;
+      --accent: #B36FF2; --accent-soft: #f7f0ff;
+      --green: #10b981; --green-soft: #ecfdf5;
+      --orange: #f59e0b; --orange-soft: #fffbeb;
+      --red: #ef4444; --red-soft: #fef2f2;
+      --white: #fff; --gray: #f1f5f9;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+      --sidebar-w: 240px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gray); color:var(--text); min-height:100vh; }
+
+    .page-wrapper { display:flex; min-height:100vh; }
+    .main-area { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-width:0; }
+
+    /* TOPBAR */
+    .topbar { background:var(--white); border-bottom:1px solid var(--border); padding:1.2rem 2.5rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar-left h1 { font-size:1.15rem; font-weight:800; }
+    .topbar-left p  { font-size:0.75rem; color:var(--muted); margin-top:0.1rem; }
+
+    /* CONTENT */
+    .content { padding:2rem 2.5rem 4rem; }
+
+    /* STAT CARDS */
+    .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.75rem; }
+    .stat-card { background:var(--white); border:1px solid var(--border); border-radius:16px; padding:1.1rem 1.3rem; display:flex; align-items:center; gap:1rem; }
+    .stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .stat-val  { font-size:1.5rem; font-weight:800; }
+    .stat-lbl  { font-size:0.72rem; color:var(--muted); font-weight:600; margin-top:0.05rem; }
+
+    /* TABS */
+    .tab-bar { display:flex; gap:0.5rem; margin-bottom:1.5rem; background:var(--white); border:1px solid var(--border); border-radius:14px; padding:0.4rem; width:fit-content; }
+    .tab-btn { padding:0.5rem 1.2rem; border-radius:10px; border:none; font-family:inherit; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:var(--muted); transition:0.18s; display:flex; align-items:center; gap:0.4rem; }
+    .tab-btn.active { background:linear-gradient(135deg,var(--accent),var(--primary)); color:white; box-shadow:0 4px 12px rgba(107,115,230,0.25); }
+    .tab-count { background:rgba(0,0,0,0.08); border-radius:20px; padding:0.1rem 0.45rem; font-size:0.68rem; }
+    .tab-btn.active .tab-count { background:rgba(255,255,255,0.25); }
+
+    /* TOOLBAR */
+    .toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem; }
+    .toolbar-left  { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+    .toolbar-right { display:flex; align-items:center; gap:0.5rem; }
+    .search-input { border:1.5px solid var(--border); border-radius:9px; padding:0.5rem 0.9rem; font-family:inherit; font-size:0.8rem; background:var(--white); outline:none; width:220px; }
+    .search-input:focus { border-color:var(--primary); }
+    .filter-select { border:1.5px solid var(--border); border-radius:9px; padding:0.5rem 0.75rem; font-family:inherit; font-size:0.8rem; background:var(--white); outline:none; cursor:pointer; }
+    .btn { display:inline-flex; align-items:center; gap:0.4rem; border:none; padding:0.55rem 1rem; border-radius:9px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit; transition:0.18s; white-space:nowrap; }
+    .btn-primary { background:linear-gradient(135deg,var(--accent),var(--primary)); color:white; box-shadow:0 3px 10px rgba(107,115,230,0.25); }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(107,115,230,0.3); }
+    .btn-outline { background:var(--white); border:1.5px solid var(--border); color:var(--muted); }
+    .btn-outline:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-soft); }
+    .btn-danger { background:var(--red-soft); border:1.5px solid #fca5a5; color:var(--red); }
+    .btn-danger:hover { background:var(--red); color:white; }
+
+    /* TABLE */
+    .table-card { background:var(--white); border:1px solid var(--border); border-radius:20px; overflow:hidden; }
+    .table-info  { padding:0.75rem 1.5rem; border-bottom:1px solid var(--border); font-size:0.75rem; color:var(--muted); display:flex; align-items:center; justify-content:space-between; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { padding:0.85rem 1.25rem; background:#f8faff; text-align:left; font-size:0.67rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--border); white-space:nowrap; }
+    thead th.sortable { cursor:pointer; user-select:none; }
+    thead th.sortable:hover { color:var(--primary); }
+    tbody td { padding:0.9rem 1.25rem; font-size:0.84rem; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover { background:#fafbff; }
+    .checkbox-col { width:40px; }
+    input[type=checkbox] { width:15px; height:15px; cursor:pointer; accent-color:var(--primary); }
+
+    .avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--primary)); color:white; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:800; flex-shrink:0; }
+    .badge { padding:0.22rem 0.6rem; border-radius:20px; font-size:0.67rem; font-weight:700; white-space:nowrap; }
+    .badge-aktif    { background:var(--green-soft); color:var(--green); }
+    .badge-nonaktif { background:var(--red-soft); color:var(--red); }
+    .kelas-badge    { background:var(--primary-soft); color:var(--primary); padding:0.2rem 0.55rem; border-radius:6px; font-size:0.7rem; font-weight:700; }
+    .id-chip { font-size:0.78rem; background:#f0f4fe; padding:0.15rem 0.5rem; border-radius:6px; color:var(--primary); font-weight:700; font-family:monospace; }
+
+    .action-btns { display:flex; gap:0.35rem; }
+    .btn-icon { width:30px; height:30px; border-radius:7px; border:1.5px solid var(--border); background:var(--white); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.8rem; transition:0.15s; }
+    .btn-icon:hover { transform:scale(1.1); }
+    .btn-edit:hover   { border-color:var(--primary); background:var(--primary-soft); }
+    .btn-reset:hover  { border-color:var(--orange); background:var(--orange-soft); }
+    .btn-toggle:hover { border-color:var(--green); background:var(--green-soft); }
+    .btn-delete:hover { border-color:var(--red); background:var(--red-soft); }
+
+    .empty-row td { text-align:center; padding:3rem; color:var(--muted); font-size:0.85rem; }
+
+    /* BULK BAR */
+    .bulk-bar { display:none; background:linear-gradient(135deg,#1e1b4b,#3730a3); border-radius:12px; padding:0.75rem 1.25rem; margin-bottom:1rem; align-items:center; justify-content:space-between; color:white; gap:0.75rem; flex-wrap:wrap; }
+    .bulk-bar.show { display:flex; }
+    .bulk-bar span { font-size:0.82rem; font-weight:700; }
+    .bulk-actions { display:flex; gap:0.5rem; }
+    .btn-bulk { padding:0.4rem 0.85rem; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:white; font-family:inherit; font-size:0.78rem; font-weight:700; cursor:pointer; transition:0.15s; }
+    .btn-bulk:hover { background:rgba(255,255,255,0.2); }
+    .btn-bulk.danger { border-color:rgba(239,68,68,0.5); background:rgba(239,68,68,0.2); }
+    .btn-bulk.danger:hover { background:rgba(239,68,68,0.4); }
+
+    /* MODAL */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center; padding:1rem; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:white; border-radius:22px; padding:2rem; width:100%; max-width:500px; animation:modalIn 0.22s ease; max-height:90vh; overflow-y:auto; }
+    @keyframes modalIn { from{opacity:0;transform:scale(0.96) translateY(12px)} to{opacity:1;transform:none} }
+    .modal-title { font-size:1rem; font-weight:800; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.5rem; }
+
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .form-group { margin-bottom:1rem; }
+    .form-group.full { grid-column:1/-1; }
+    .form-label { font-size:0.7rem; font-weight:700; color:var(--muted); display:block; margin-bottom:0.35rem; text-transform:uppercase; letter-spacing:0.04em; }
+    .form-label span.req { color:var(--red); }
+    .form-input  { width:100%; border:1.5px solid var(--border); border-radius:10px; padding:0.68rem 0.9rem; font-family:inherit; font-size:0.85rem; outline:none; transition:0.15s; background:var(--gray); }
+    .form-input:focus  { border-color:var(--primary); background:white; box-shadow:0 0 0 3px rgba(75,127,242,0.1); }
+    .form-input[readonly] { background:#f0f4fe; color:var(--primary); cursor:not-allowed; font-weight:700; }
+    .form-select { width:100%; border:1.5px solid var(--border); border-radius:10px; padding:0.68rem 0.9rem; font-family:inherit; font-size:0.85rem; outline:none; background:var(--gray); cursor:pointer; }
+    .form-select:focus { border-color:var(--primary); background:white; }
+
+    .pw-auto-note { display:flex; align-items:center; gap:0.5rem; background:#f0f4fe; border:1px solid #dde3f8; border-radius:8px; padding:0.6rem 0.85rem; font-size:0.75rem; color:var(--primary); font-weight:600; margin-bottom:1rem; }
+
+    .modal-footer { display:flex; gap:0.75rem; margin-top:1.5rem; }
+    .btn-cancel { flex:1; padding:0.75rem; border-radius:10px; border:1.5px solid var(--border); background:white; font-family:inherit; font-weight:700; cursor:pointer; color:var(--muted); }
+    .btn-save   { flex:2; padding:0.75rem; border-radius:10px; border:none; background:linear-gradient(135deg,var(--accent),var(--primary)); color:white; font-family:inherit; font-weight:800; cursor:pointer; }
+    .btn-save:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* CONFIRM */
+    .confirm-box { background:white; border-radius:22px; padding:2rem; width:100%; max-width:360px; text-align:center; animation:modalIn 0.22s ease; }
+    .confirm-icon  { font-size:3rem; margin-bottom:1rem; }
+    .confirm-title { font-size:1rem; font-weight:800; margin-bottom:0.5rem; }
+    .confirm-desc  { font-size:0.85rem; color:var(--muted); margin-bottom:1.5rem; }
+    .confirm-actions { display:flex; gap:0.75rem; }
+    .btn-cc { flex:1; padding:0.75rem; border-radius:10px; border:1.5px solid var(--border); background:white; font-family:inherit; font-weight:700; cursor:pointer; }
+    .btn-cd { flex:1; padding:0.75rem; border-radius:10px; border:none; background:var(--red); color:white; font-family:inherit; font-weight:800; cursor:pointer; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:2rem; right:2rem; background:#1e293b; color:white; padding:0.85rem 1.25rem; border-radius:12px; font-size:0.82rem; font-weight:600; z-index:9999; transform:translateY(80px); opacity:0; transition:0.3s; min-width:200px; }
+    .toast.show    { transform:translateY(0); opacity:1; }
+    .toast.success { border-left:4px solid var(--green); }
+    .toast.error   { border-left:4px solid var(--red); }
+    .toast.info    { border-left:4px solid var(--primary); }
+
+    @media (max-width:768px) {
+      .main-area { margin-left:0; }
+      .content { padding:1.25rem 1rem 3rem; }
+      .topbar  { padding:1rem 1.25rem; padding-left:4rem; }
+      .stats-row { grid-template-columns:repeat(2,1fr); }
+      .toolbar { flex-direction:column; align-items:flex-start; }
+      .search-input { width:100%; }
+      .form-row { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <admin-sidebar active="anggota"></admin-sidebar>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>👥 Kelola Akun</h1>
+        <p>Manajemen akun siswa, guru, dan admin</p>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- STAT CARDS -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#eef3ff;">🎓</div>
+          <div><div class="stat-val" id="statSiswa">—</div><div class="stat-lbl">Total Siswa</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#f7f0ff;">👨‍🏫</div>
+          <div><div class="stat-val" id="statGuru">—</div><div class="stat-lbl">Total Guru</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ecfdf5;">✅</div>
+          <div><div class="stat-val" id="statAktif">—</div><div class="stat-lbl">Akun Aktif</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef2f2;">🚫</div>
+          <div><div class="stat-val" id="statNonaktif">—</div><div class="stat-lbl">Nonaktif</div></div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('siswa')">🎓 Siswa <span class="tab-count" id="tcSiswa">0</span></button>
+        <button class="tab-btn" onclick="switchTab('guru')">👨‍🏫 Guru <span class="tab-count" id="tcGuru">0</span></button>
+        <button class="tab-btn" onclick="switchTab('admin')">🔑 Admin <span class="tab-count" id="tcAdmin">0</span></button>
+      </div>
+
+      <!-- BULK BAR -->
+      <div class="bulk-bar" id="bulkBar">
+        <span id="bulkCount">0 akun dipilih</span>
+        <div class="bulk-actions">
+          <button class="btn-bulk" onclick="bulkSetStatus('aktif')">✅ Aktifkan</button>
+          <button class="btn-bulk" onclick="bulkSetStatus('nonaktif')">🚫 Nonaktifkan</button>
+          <button class="btn-bulk" onclick="bulkResetPassword()">🔑 Reset Password = NIS</button>
+          <button class="btn-bulk danger" onclick="bulkDelete()">🗑️ Hapus</button>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input type="text" class="search-input" id="searchInput" placeholder="🔍 Cari nama / NIS..." oninput="filterTable()">
+          <select class="filter-select" id="filterStatus" onchange="filterTable()">
+            <option value="">Semua Status</option>
+            <option value="aktif">Aktif</option>
+            <option value="nonaktif">Nonaktif</option>
+          </select>
+          <select class="filter-select" id="filterKelas" onchange="filterTable()" style="display:none;">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-outline" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="btn btn-primary" onclick="openModal()">+ Tambah Akun</button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-card">
+        <div class="table-info">
+          <span id="tableInfo">Menampilkan semua data</span>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;cursor:pointer;">
+            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> Pilih Semua
+          </label>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- FORM MODAL -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">➕ Tambah Akun</div>
+
+    <div class="pw-auto-note" id="pwAutoNote">
+      🔑 Password otomatis = NIS yang kamu masukkan
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">NIS / ID <span class="req">*</span></label>
+        <input type="text" id="fId" class="form-input" placeholder="Contoh: 23173059" oninput="onNisInput()">
+        <div id="idHint" style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Jadi Document ID + username login</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select id="fStatus" class="form-select">
+          <option value="aktif">Aktif</option>
+          <option value="nonaktif">Nonaktif</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Nama Lengkap <span class="req">*</span></label>
+      <input type="text" id="fNama" class="form-input" placeholder="Masukkan nama lengkap">
+    </div>
+
+    <!-- Kelas (siswa only) -->
+    <div class="form-row" id="fKelasGroup">
+      <div class="form-group">
+        <label class="form-label">Tingkat</label>
+        <select id="fTingkat" class="form-select" onchange="buildKelasOptions()">
+          <option value="">Pilih Tingkat</option>
+          <option value="X">X</option>
+          <option value="XI">XI</option>
+          <option value="XII">XII</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Jurusan</label>
+        <select id="fJurusan" class="form-select" onchange="buildKelasPreview()">
+          <option value="">Pilih Jurusan</option>
+          <option value="RPL">RPL</option>
+          <option value="DKV">DKV</option>
+          <option value="ANM">ANM</option>
+          <option value="BC">BC</option>
+          <option value="TKJ">TKJ</option>
+          <option value="GAMEDEV">GAMEDEV</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Kelas (Preview)</label>
+        <input type="text" id="fKelas" class="form-input" readonly placeholder="Otomatis terisi">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-save" id="btnSave" onclick="saveData()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon">🗑️</div>
+    <div class="confirm-title" id="confirmTitle">Hapus Akun?</div>
+    <div class="confirm-desc"  id="confirmDesc">Akun ini akan dihapus permanen.</div>
+    <div class="confirm-actions">
+      <button class="btn-cc" onclick="closeConfirm()">Batal</button>
+      <button class="btn-cd" id="btnConfirmAct" onclick="doConfirmAction()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { db } from "../firebase.js";
+  import {
+    collection, getDocs, setDoc, doc,
+    updateDoc, deleteDoc, writeBatch, orderBy, query
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  let currentTab     = "siswa";
+  let allData        = [];
+  let filteredData   = [];
+  let selectedIds    = new Set();
+  let editingDocId   = null;
+  let confirmAction  = null;   // fn to call on confirm
+
+  const tabConfig = {
+    siswa: { label:"Daftar Siswa", cols:["","NIS","Nama","Kelas","Status","Aksi"], hasKelas:true  },
+    guru:  { label:"Daftar Guru",  cols:["","ID","Nama","Status","Aksi"],          hasKelas:false },
+    admin: { label:"Daftar Admin", cols:["","ID","Nama","Status","Aksi"],          hasKelas:false }
+  };
+
+  // ── COUNTS ──
+  async function loadCounts() {
+    const colls = ["siswa","guru","admin"];
+    const snaps = await Promise.all(colls.map(c => getDocs(collection(db, c))));
+    const all   = snaps.map(s => s.docs.map(d => d.data()));
+    document.getElementById("statSiswa").textContent   = all[0].length;
+    document.getElementById("statGuru").textContent    = all[1].length;
+    const flat    = [...all[0],...all[1],...all[2]];
+    const aktif   = flat.filter(d => (d.status||"").toLowerCase() === "aktif").length;
+    document.getElementById("statAktif").textContent    = aktif;
+    document.getElementById("statNonaktif").textContent = flat.length - aktif;
+    document.getElementById("tcSiswa").textContent  = all[0].length;
+    document.getElementById("tcGuru").textContent   = all[1].length;
+    document.getElementById("tcAdmin").textContent  = all[2].length;
+  }
+
+  // ── SWITCH TAB ──
+  window.switchTab = (tab) => {
+    currentTab = tab;
+    document.querySelectorAll(".tab-btn").forEach((b,i) =>
+      b.classList.toggle("active", ["siswa","guru","admin"][i] === tab));
+    document.getElementById("searchInput").value  = "";
+    document.getElementById("filterStatus").value = "";
+    document.getElementById("filterKelas").style.display = tab === "siswa" ? "inline-block" : "none";
+    selectedIds.clear();
+    updateBulkBar();
+    loadData();
+  };
+
+  // ── LOAD ──
+  async function loadData() {
+    const cfg = tabConfig[currentTab];
+    renderHead(cfg.cols);
+    document.getElementById("tableBody").innerHTML =
+      `<tr class="empty-row"><td colspan="${cfg.cols.length}">⏳ Memuat data...</td></tr>`;
+    try {
+      const snap = await getDocs(query(collection(db, currentTab), orderBy("nama")));
+      allData = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      buildKelasFilter();
+      filterTable();
+    } catch (err) {
+      document.getElementById("tableBody").innerHTML =
+        `<tr class="empty-row"><td colspan="${cfg.cols.length}" style="color:var(--red);">⚠️ ${err.message}</td></tr>`;
+    }
+  }
+
+  function buildKelasFilter() {
+    const sel = document.getElementById("filterKelas");
+    const kelasSet = new Set(allData.map(d => d.kelas).filter(Boolean));
+    const sorted   = [...kelasSet].sort();
+    sel.innerHTML  = `<option value="">Semua Kelas</option>` +
+      sorted.map(k => `<option value="${k}">${k}</option>`).join("");
+  }
+
+  function renderHead(cols) {
+    document.getElementById("tableHead").innerHTML =
+      `<tr>${cols.map((c,i) => i === 0
+        ? `<th class="checkbox-col"></th>`
+        : `<th>${c}</th>`
+      ).join("")}</tr>`;
+  }
+
+  window.filterTable = () => {
+    const q      = document.getElementById("searchInput").value.toLowerCase();
+    const status = document.getElementById("filterStatus").value.toLowerCase();
+    const kelas  = document.getElementById("filterKelas").value;
+    filteredData = allData.filter(d => {
+      const matchQ = (d.nama||"").toLowerCase().includes(q) || (d._id||"").toLowerCase().includes(q);
+      const matchS = !status || (d.status||"").toLowerCase() === status;
+      const matchK = !kelas  || d.kelas === kelas;
+      return matchQ && matchS && matchK;
+    });
+    document.getElementById("tableInfo").textContent =
+      filteredData.length === allData.length
+        ? `Menampilkan ${allData.length} akun`
+        : `Menampilkan ${filteredData.length} dari ${allData.length} akun`;
+    renderBody(filteredData);
+    document.getElementById("selectAll").checked = false;
+  };
+
+  function renderBody(data) {
+    const cfg   = tabConfig[currentTab];
+    const tbody = document.getElementById("tableBody");
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr class="empty-row"><td colspan="${cfg.cols.length}">Tidak ada data ditemukan</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(d => {
+      const initial  = (d.nama||"?").charAt(0).toUpperCase();
+      const checked  = selectedIds.has(d._id) ? "checked" : "";
+      const sBadge   = `<span class="badge ${(d.status||"").toLowerCase() === "aktif" ? "badge-aktif" : "badge-nonaktif"}">${d.status||"—"}</span>`;
+      const idChip   = `<span class="id-chip">${d._id}</span>`;
+      const avatarNm = `<div style="display:flex;align-items:center;gap:0.65rem;">
+        <div class="avatar">${initial}</div>
+        <span style="font-weight:700;">${d.nama||"—"}</span>
+      </div>`;
+      const safeNama = (d.nama||"").replace(/'/g,"\\'");
+      const actions  = `<div class="action-btns">
+        <button class="btn-icon btn-edit"   onclick="openEdit('${d._id}')"              title="Edit">✏️</button>
+        <button class="btn-icon btn-toggle" onclick="toggleStatus('${d._id}','${d.status}')" title="Toggle Status">${(d.status||"").toLowerCase()==="aktif"?"🚫":"✅"}</button>
+        <button class="btn-icon btn-reset"  onclick="resetPw('${d._id}')"               title="Reset Password = NIS">🔑</button>
+        <button class="btn-icon btn-delete" onclick="askDelete('${d._id}','${safeNama}')"  title="Hapus">🗑️</button>
+      </div>`;
+
+      const cb = `<td><input type="checkbox" ${checked} onchange="toggleSelect('${d._id}')"></td>`;
+      if (currentTab === "siswa") {
+        return `<tr>${cb}<td>${idChip}</td><td>${avatarNm}</td>
+          <td>${d.kelas ? `<span class="kelas-badge">${d.kelas}</span>` : "—"}</td>
+          <td>${sBadge}</td><td>${actions}</td></tr>`;
+      } else {
+        return `<tr>${cb}<td>${idChip}</td><td>${avatarNm}</td>
+          <td>${sBadge}</td><td>${actions}</td></tr>`;
+      }
+    }).join("");
+  }
+
+  // ── SELECT ──
+  window.toggleSelect = (id) => {
+    selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
+    updateBulkBar();
+  };
+  window.toggleSelectAll = () => {
+    const all = document.getElementById("selectAll").checked;
+    filteredData.forEach(d => all ? selectedIds.add(d._id) : selectedIds.delete(d._id));
+    updateBulkBar();
+    renderBody(filteredData);
+  };
+  function updateBulkBar() {
+    const bar = document.getElementById("bulkBar");
+    if (selectedIds.size > 0) {
+      bar.classList.add("show");
+      document.getElementById("bulkCount").textContent = `${selectedIds.size} akun dipilih`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  // ── TOGGLE STATUS ──
+  window.toggleStatus = async (id, currentStatus) => {
+    const newStatus = (currentStatus||"").toLowerCase() === "aktif" ? "nonaktif" : "aktif";
+    try {
+      await updateDoc(doc(db, currentTab, id), { status: newStatus });
+      showToast(`${newStatus === "aktif" ? "✅ Diaktifkan" : "🚫 Dinonaktifkan"}!`);
+      loadData(); loadCounts();
+    } catch (err) { showToast("❌ " + err.message, "error"); }
+  };
+
+  // ── RESET PASSWORD ──
+  window.resetPw = (id) => {
+    confirmAction = async () => {
+      await updateDoc(doc(db, currentTab, id), { password: id });
+      showToast("🔑 Password direset ke NIS!", "info");
+      closeConfirm();
+    };
+    showConfirm("🔑", "Reset Password?", `Password akun ID "${id}" akan direset menjadi NIS-nya.`, "Reset", "#f59e0b");
+  };
+
+  // ── BULK ──
+  window.bulkSetStatus = async (status) => {
+    if (selectedIds.size === 0) return;
+    const batch = writeBatch(db);
+    selectedIds.forEach(id => batch.update(doc(db, currentTab, id), { status }));
+    await batch.commit();
+    showToast(`✅ ${selectedIds.size} akun ${status === "aktif" ? "diaktifkan" : "dinonaktifkan"}!`);
+    selectedIds.clear(); updateBulkBar(); loadData(); loadCounts();
+  };
+
+  window.bulkResetPassword = async () => {
+    if (selectedIds.size === 0) return;
+    const batch = writeBatch(db);
+    selectedIds.forEach(id => batch.update(doc(db, currentTab, id), { password: id }));
+    await batch.commit();
+    showToast(`🔑 ${selectedIds.size} password direset!`, "info");
+    selectedIds.clear(); updateBulkBar();
+  };
+
+  window.bulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    confirmAction = async () => {
+      const batch = writeBatch(db);
+      selectedIds.forEach(id => batch.delete(doc(db, currentTab, id)));
+      await batch.commit();
+      showToast(`🗑️ ${selectedIds.size} akun dihapus!`);
+      selectedIds.clear(); updateBulkBar(); closeConfirm(); loadData(); loadCounts();
+    };
+    showConfirm("🗑️", "Hapus Akun?", `${selectedIds.size} akun terpilih akan dihapus permanen.`, "Hapus", "var(--red)");
+  };
+
+  // ── EXPORT CSV ──
+  window.exportCSV = () => {
+    const cols = currentTab === "siswa"
+      ? ["NIS","Nama","Kelas","Status"]
+      : ["ID","Nama","Status"];
+    const rows = filteredData.map(d =>
+      currentTab === "siswa"
+        ? [d._id, d.nama, d.kelas, d.status]
+        : [d._id, d.nama, d.status]
+    );
+    const csv = [cols, ...rows].map(r => r.map(v => `"${v||""}"`).join(",")).join("\n");
+    const a   = document.createElement("a");
+    a.href    = URL.createObjectURL(new Blob([csv], { type:"text/csv" }));
+    a.download = `akun_${currentTab}_${Date.now()}.csv`;
+    a.click();
+    showToast("📥 CSV berhasil diunduh!", "info");
+  };
+
+  // ── MODAL TAMBAH ──
+  window.openModal = () => {
+    editingDocId = null;
+    document.getElementById("modalTitle").textContent = "➕ Tambah Akun Baru";
+    document.getElementById("pwAutoNote").style.display = "flex";
+    document.getElementById("fId").value      = "";
+    document.getElementById("fId").readOnly   = false;
+    document.getElementById("fNama").value    = "";
+    document.getElementById("fTingkat").value = "";
+    document.getElementById("fJurusan").value = "";
+    document.getElementById("fKelas").value   = "";
+    document.getElementById("fStatus").value  = "aktif";
+    document.getElementById("idHint").textContent = "Jadi Document ID + username login";
+    document.getElementById("fKelasGroup").style.display = currentTab === "siswa" ? "grid" : "none";
+    document.getElementById("btnSave").textContent = "Simpan";
+    document.getElementById("formModal").classList.add("show");
+  };
+
+  // ── MODAL EDIT ──
+  window.openEdit = (id) => {
+    const d = allData.find(x => x._id === id);
+    if (!d) return;
+    editingDocId = id;
+    document.getElementById("modalTitle").textContent = "✏️ Edit Akun";
+    document.getElementById("pwAutoNote").style.display = "none";
+    document.getElementById("fId").value      = d._id;
+    document.getElementById("fId").readOnly   = true;
+    document.getElementById("fNama").value    = d.nama     || "";
+    document.getElementById("fStatus").value  = (d.status || "aktif").toLowerCase();
+    document.getElementById("idHint").textContent = "ID tidak bisa diubah setelah dibuat";
+
+    // Parse kelas
+    if (currentTab === "siswa" && d.kelas) {
+      const parts = d.kelas.split(" ");
+      document.getElementById("fTingkat").value = parts[0] || "";
+      document.getElementById("fJurusan").value = parts[1] || "";
+      document.getElementById("fKelas").value   = d.kelas;
+    }
+    document.getElementById("fKelasGroup").style.display = currentTab === "siswa" ? "grid" : "none";
+    document.getElementById("btnSave").textContent = "Update";
+    document.getElementById("formModal").classList.add("show");
+  };
+
+  window.closeModal = () => document.getElementById("formModal").classList.remove("show");
+
+  // ── KELAS BUILDER ──
+  window.buildKelasOptions = window.buildKelasPreview = () => {
+    const t = document.getElementById("fTingkat").value;
+    const j = document.getElementById("fJurusan").value;
+    document.getElementById("fKelas").value = t && j ? `${t} ${j}` : (t || j || "");
+  };
+
+  // ── NIS INPUT → auto hint ──
+  window.onNisInput = () => {
+    const val = document.getElementById("fId").value.trim();
+    const exists = allData.find(d => d._id === val);
+    const hint   = document.getElementById("idHint");
+    if (exists) {
+      hint.textContent = `⚠️ ID ini sudah ada (${exists.nama})`;
+      hint.style.color = "var(--orange)";
+    } else {
+      hint.textContent = "Jadi Document ID + username login";
+      hint.style.color = "var(--muted)";
+    }
+  };
+
+  // ── SAVE ──
+  window.saveData = async () => {
+    const docId  = document.getElementById("fId").value.trim();
+    const nama   = document.getElementById("fNama").value.trim();
+    const kelas  = document.getElementById("fKelas").value.trim();
+    const status = document.getElementById("fStatus").value;
+
+    if (!docId) { showToast("⚠️ NIS / ID wajib diisi!", "error"); return; }
+    if (!nama)  { showToast("⚠️ Nama wajib diisi!", "error"); return; }
+
+    const btn = document.getElementById("btnSave");
+    btn.disabled = true; btn.textContent = "Menyimpan...";
+
+    // Password otomatis = NIS saat pertama kali buat akun
+    const payload = { nama, status };
+    if (currentTab === "siswa") payload.kelas = kelas;
+
+    try {
+      if (editingDocId) {
+        await updateDoc(doc(db, currentTab, editingDocId), payload);
+        showToast("✅ Akun berhasil diupdate!");
+      } else {
+        // Set password = NIS/ID otomatis
+        payload.password = docId;
+        await setDoc(doc(db, currentTab, docId), payload);
+        showToast("✅ Akun ditambahkan! Password = NIS");
+      }
+      closeModal();
+      loadData(); loadCounts();
+    } catch (err) {
+      showToast("❌ " + err.message, "error");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingDocId ? "Update" : "Simpan";
+    }
+  };
+
+  // ── DELETE ──
+  window.askDelete = (id, nama) => {
+    confirmAction = async () => {
+      await deleteDoc(doc(db, currentTab, id));
+      showToast("🗑️ Akun berhasil dihapus!");
+      closeConfirm(); loadData(); loadCounts();
+    };
+    showConfirm("🗑️", "Hapus Akun?", `Akun "${nama}" (ID: ${id}) akan dihapus permanen.`, "Hapus", "var(--red)");
+  };
+
+  // ── CONFIRM MODAL ──
+  function showConfirm(icon, title, desc, btnLabel, btnColor) {
+    document.getElementById("confirmIcon").textContent   = icon;
+    document.getElementById("confirmTitle").textContent  = title;
+    document.getElementById("confirmDesc").textContent   = desc;
+    document.getElementById("btnConfirmAct").textContent = btnLabel;
+    document.getElementById("btnConfirmAct").style.background = btnColor;
+    document.getElementById("confirmModal").classList.add("show");
+  }
+  window.closeConfirm     = () => document.getElementById("confirmModal").classList.remove("show");
+  window.doConfirmAction  = async () => { if (confirmAction) await confirmAction(); };
+
+  // ── TOAST ──
+  function showToast(msg, type = "success") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = `toast ${type} show`;
+    setTimeout(() => t.classList.remove("show"), 3200);
+  }
+
+  ["formModal","confirmModal"].forEach(id =>
+    document.getElementById(id).addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) id === "formModal" ? closeModal() : closeConfirm();
+    })
+  );
+
+  // ── INIT ──
+  loadCounts();
+  loadData();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Perpus SMK Bina Informatika</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4B7FF2;
+      --primary-soft: #eef3ff;
+      --accent: #B36FF2;
+      --accent-soft: #f7f0ff;
+      --text: #1e1e2e;
+      --muted: #64748b;
+      --white: #ffffff;
+      --gray: #f8fafc;
+      --border: #e2e8f0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gray);
+      color: var(--text);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.4;
+      animation: drift 9s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    .blob-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #c4b5fd, #93c5fd);
+      top: -180px; left: -150px;
+    }
+
+    .blob-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #f9a8d4, #a78bfa);
+      bottom: -120px; right: -120px;
+      animation-delay: -4s;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(25px, 18px) scale(1.07); }
+    }
+
+    /* ─── CARD ─── */
+    .card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.9);
+      width: 100%;
+      max-width: 400px;
+      border-radius: 28px;
+      box-shadow: 0 20px 50px rgba(75,127,242,0.1), 0 4px 16px rgba(0,0,0,0.06);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      animation: slideUp 0.5s cubic-bezier(0.34,1.2,0.64,1) both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Top strip */
+    .card-top {
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      padding: 2rem 2rem 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-top::before {
+      content: '';
+      position: absolute;
+      top: -50px; right: -40px;
+      width: 150px; height: 150px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+
+    .card-top::after {
+      content: '';
+      position: absolute;
+      bottom: -35px; left: 50px;
+      width: 100px; height: 100px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+
+    .brand-icon {
+      width: 32px; height: 32px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+
+    .brand-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.02em;
+    }
+
+    .card-top h2 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+      position: relative;
+    }
+
+    .card-top p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.75);
+      margin-top: 0.3rem;
+      position: relative;
+    }
+
+    /* Body */
+    .card-body { padding: 1.75rem 2rem 2rem; }
+
+    .back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      transition: color 0.18s;
+    }
+
+    .back-home:hover { color: var(--primary); }
+
+    .field { margin-bottom: 1.1rem; }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--text);
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%; transform: translateY(-50%);
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: var(--gray);
+      color: var(--text);
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: var(--primary);
+      background: var(--white);
+      box-shadow: 0 0 0 4px rgba(75,127,242,0.1);
+    }
+
+    .field input::placeholder { color: #b0bac9; }
+
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      color: white;
+      border: none;
+      padding: 0.88rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 0.5rem;
+      box-shadow: 0 6px 20px rgba(107,115,230,0.3);
+      transition: all 0.25s ease;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(107,115,230,0.4);
+    }
+
+    .btn-login:active { transform: translateY(0); }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.25rem 0 1rem;
+      color: #c0c8d8;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .login-footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .login-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .login-footer a:hover { text-decoration: underline; }
+
+    /* Penempatan ikon mata */
+    .password-toggle {
+      position: absolute;
+      right: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--muted);
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .password-toggle:hover {
+      color: var(--primary);
+    }
+
+    /* Biar teks input tidak tertutup ikon mata */
+    #passInput {
+      padding-right: 2.8rem;
+    }
+
+    /* ─── RESPONSIVE ─── */
+
+    /* Tablet kecil & HP landscape (max 480px ke bawah) */
+    @media (max-width: 480px) {
+      body {
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+        padding: 1.25rem 1rem;
+        overflow-y: auto;
+      }
+
+      .card {
+        max-width: 100%;
+        width: 100%;
+        margin: auto;
+        border-radius: 22px;
+      }
+
+      .card-top {
+        padding: 1.5rem 1.5rem 1.35rem;
+      }
+
+      .card-top h2 {
+        font-size: 1.4rem;
+      }
+
+      .card-body {
+        padding: 1.4rem 1.5rem 1.75rem;
+      }
+    }
+
+    /* HP kecil sekali (max 360px) */
+    @media (max-width: 360px) {
+      .card {
+        margin: 0 0.75rem;
+        border-radius: 18px;
+      }
+
+      .card-top {
+        padding: 1.25rem 1.25rem 1.1rem;
+      }
+
+      .card-top h2 {
+        font-size: 1.25rem;
+      }
+
+      .card-body {
+        padding: 1.25rem 1.25rem 1.5rem;
+      }
+
+      .field input {
+        font-size: 0.85rem;
+        padding: 0.7rem 1rem 0.7rem 2.4rem;
+      }
+
+      .btn-login {
+        font-size: 0.88rem;
+        padding: 0.8rem;
+      }
+    }
+
+    /* Layar sangat sempit (max 320px) */
+    @media (max-width: 320px) {
+      .card {
+        margin: 0 0.5rem;
+      }
+
+      .back-home {
+        font-size: 0.75rem;
+      }
+
+      .field label {
+        font-size: 0.75rem;
+      }
+    }
+
+    /* Tablet & desktop lebar — pastikan card tetap centered & proporsional */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .card {
+        max-width: 380px;
+        margin: 0 auto;
+      }
+    }
+
+    /* Landscape HP (tinggi layar kecil) */
+    @media (max-height: 600px) and (orientation: landscape) {
+      body {
+        align-items: center;
+        padding: 1rem;
+        overflow-y: auto;
+        min-height: 100dvh;
+      }
+
+      .card {
+        margin: 0 auto;
+      }
+
+      .card-top {
+        padding: 1.25rem 2rem 1.1rem;
+      }
+
+      .card-top h2 {
+        font-size: 1.35rem;
+      }
+
+      .card-body {
+        padding: 1.25rem 2rem 1.5rem;
+      }
+
+      .field {
+        margin-bottom: 0.85rem;
+      }
+
+      .back-home {
+        margin-bottom: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="card">
+    <!-- Top gradient header -->
+    <div class="card-top">
+      <h2>Halo! 👋</h2>
+      <p>Masuk untuk mengakses perpustakaan</p>
+    </div>
+
+    <!-- Form body -->
+    <div class="card-body">
+      <a href="index.html" class="back-home">← Kembali ke Beranda</a>
+
+      <form id="loginForm">
+        <div class="field">
+          <label>NIS / NIP</label>
+          <div class="input-wrap">
+            <span class="input-icon">🪪</span>
+            <input type="text" id="userInput" placeholder="Contoh: 2024001" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Kata Sandi</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="passInput" placeholder="••••••••" required>
+            <span class="password-toggle" id="togglePassword">👁️</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login">Masuk ke Akun →</button>
+      </form>
+
+      <div class="divider">atau</div>
+
+      <p class="login-footer">Belum punya akun? <a href="#">Hubungi Petugas</a></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const loginForm = document.getElementById('loginForm');
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('passInput');
+
+    togglePassword.addEventListener('click', function () {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      this.textContent = type === 'password' ? '👁️' : '🙈';
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('userInput').value;
+      const pass = document.getElementById('passInput').value;
+
+      try {
+        // 1. Cek Tabel Admin
+        let userDoc = await getDoc(doc(db, "admin", id));
+        if (userDoc.exists()) {
+          verifyAndRedirect(userDoc.data(), pass, "/admin/index.html");
+          return;
+        }
+
+        // 2. Cek Tabel Guru
+        userDoc = await getDoc(doc(db, "guru", id));
+        if (userDoc.exists()) {
+          verifyAndRedirect(userDoc.data(), pass, "guru_dashboard.html");
+          return;
+        }
+
+        // 3. Cek Tabel Siswa
+        userDoc = await getDoc(doc(db, "siswa", id));
+        if (userDoc.exists()) {
+          verifyAndRedirect(userDoc.data(), pass, "/siswa/index.html");
+          return;
+        }
+
+        alert("ID tidak ditemukan di database!");
+
+      } catch (err) {
+        console.error(err);
+        alert("Gagal terhubung ke database.");
+      }
+    });
+
+    function verifyAndRedirect(userData, inputPass, target) {
+      if (userData.password === inputPass) {
+        sessionStorage.setItem("userActive", JSON.stringify(userData));
+        window.location.href = target;
+      } else {
+        alert("Password salah!");
+      }
+    }
+  </script>
+
+</body>
+</html>
