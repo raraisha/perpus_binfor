@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "firebase.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo 'No build step needed'"
   },
   "repository": {
     "type": "git",
@@ -16,8 +17,5 @@
     "url": "https://github.com/raraisha/perpus_binfor/issues"
   },
   "homepage": "https://github.com/raraisha/perpus_binfor#readme",
-  "description": "",
-  "dependencies": {
-    "firebase": "^12.11.0"
-  }
+  "description": ""
 }
