@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Pengumuman - Admin</title>
+  <script src="./sidebar.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f6fa; --white: #ffffff; --border: #ececf5; --border2: #dde3f8;
+      --accent: #7C6BF2; --accent-soft: #f0effe; --primary: #4B7FF2;
+      --primary-soft: #eef3ff; --red: #ef4444; --red-soft: #fef2f2;
+      --green: #10b981; --green-soft: #ecfdf5; --text: #1e1e2e;
+      --text2: #6b6e8a; --text3: #a0a5be;
+      --sidebar-w: 240px; 
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex; 
+    }
+
+    /* Area konten utama di sebelah kanan sidebar */
+    .main-area { 
+      margin-left: var(--sidebar-w); 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      min-width: 0; 
+      transition: margin-left 0.3s;
+    }
+
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 2.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-left h1 { font-size: 1.1rem; font-weight: 800; }
+    .topbar-left p  { font-size: 0.75rem; color: var(--text2); margin-top: 0.1rem; }
+
+    .content-wrapper { max-width: 900px; width: 100%; margin: 0 auto; padding: 2rem 2.5rem 4rem; }
+
+    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-bottom: 1.5rem; }
+    .form-card-head { padding: 1.1rem 1.5rem; border-bottom: 1px solid var(--border); }
+    .form-card-head h2 { font-size: 0.9rem; font-weight: 700; }
+    .form-card-body { padding: 1.5rem; }
+
+    .field { margin-bottom: 1.1rem; }
+    .field label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text2); margin-bottom: 0.45rem; text-transform: uppercase; }
+    .field input, .field textarea {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 11px;
+      padding: 0.72rem 1rem; font-family: inherit; font-size: 0.88rem;
+      background: var(--bg); outline: none; transition: 0.18s;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--accent); background: var(--white); box-shadow: 0 0 0 3px rgba(124,107,242,0.1); }
+    .field textarea { min-height: 100px; resize: vertical; }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+      color: white; border: none; padding: 0.7rem 1.5rem; border-radius: 10px;
+      font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: 0.2s;
+    }
+
+    .list-card { background: var(--white); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { padding: 1rem 1.5rem; background: #f8faff; text-align: left; font-size: 0.65rem; font-weight: 700; color: var(--text3); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    tbody td { padding: 1.2rem 1.5rem; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
+    
+    .td-judul { font-weight: 800; color: var(--text); }
+    .td-isi { color: var(--text2); font-size: 0.78rem; margin-top: 4px; line-height: 1.5; }
+    
+    .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .modal { background: white; border-radius: 20px; padding: 2rem; width: 380px; text-align: center; }
+
+    @media (max-width: 768px) {
+      .main-area { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <admin-sidebar active="pengumuman"></admin-sidebar>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="topbarTitle">📢 Pengumuman</h1>
+        <p>Kelola berita untuk dashboard siswa</p>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="form-card">
+        <div class="form-card-head"><h2 id="formTitle">➕ Tambah Pengumuman</h2></div>
+        <div class="form-card-body">
+          <input type="hidden" id="editId">
+          <div class="field">
+            <label>Judul Berita</label>
+            <input type="text" id="inputJudul" placeholder="Ketik judul...">
+          </div>
+          <div class="field">
+            <label>Konten / Pesan</label>
+            <textarea id="inputIsi" placeholder="Tulis isi pengumuman..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn-submit" id="submitBtn" onclick="submitForm()">Simpan Data</button>
+            <button id="cancelBtn" onclick="resetForm()" style="display:none; margin-left:10px; cursor:pointer; background:none; border:none; font-weight:600; color:var(--text2);">Batal</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div class="form-card-head"><h2>📋 Daftar Pengumuman</h2></div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:70%">Konten</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="pengumumanTable">
+            <tr><td colspan="2" style="text-align:center; padding:2rem;">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="deleteOverlay">
+    <div class="modal">
+      <h3>Hapus Data?</h3>
+      <p style="margin: 1rem 0;">Tindakan ini tidak bisa dibatalkan.</p>
+      <div style="display:flex; gap:10px;">
+        <button style="flex:1; padding:0.7rem; cursor:pointer;" onclick="closeDeleteModal()">Batal</button>
+        <button id="confirmDelBtn" style="flex:1; padding:0.7rem; background:var(--red); color:white; border:none; border-radius:8px; cursor:pointer;">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "../firebase.js"; // Pastikan path firebase.js benar
+    import { collection, query, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ── LOGIKA ANTI-TERPENTAL (GUARD) ──
+    // Jangan langsung tendang, beri jeda untuk membaca session
+    const authCheck = () => {
+        const user = JSON.parse(sessionStorage.getItem("userActive"));
+        // Cek apakah user ada DAN rolenya admin (tambahkan log untuk debug)
+        console.log("Current User Session:", user);
+
+        if (!user || (user.role && user.role.toLowerCase() !== 'admin')) {
+            console.warn("Akses ditolak. Mengalihkan ke login...");
+            // Jika benar-benar kosong, baru tendang
+            window.location.href = "../login.html";
+        }
+    };
+    
+    // Jalankan pengecekan
+    authCheck();
+
+    let announcements = [];
+    let pendingId = null;
+
+    // Ekspos fungsi ke global
+    window.submitForm = submitForm;
+    window.resetForm = resetForm;
+    window.editItem = (id) => {
+        const item = announcements.find(a => a.id === id);
+        document.getElementById("editId").value = item.id;
+        document.getElementById("inputJudul").value = item.judul;
+        document.getElementById("inputIsi").value = item.isi;
+        document.getElementById("formTitle").textContent = "✏️ Edit Pengumuman";
+        document.getElementById("submitBtn").textContent = "Update Data";
+        document.getElementById("cancelBtn").style.display = "inline-block";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.openDeleteModal = (id) => {
+        pendingId = id;
+        document.getElementById("deleteOverlay").classList.add("open");
+    };
+    window.closeDeleteModal = () => document.getElementById("deleteOverlay").classList.remove("open");
+
+    async function loadList() {
+      const tbody = document.getElementById("pengumumanTable");
+      try {
+        const q = query(collection(db, "pengumuman"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        announcements = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        if (announcements.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:2rem;">Belum ada pengumuman.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = announcements.map(a => `
+          <tr>
+            <td>
+              <div class="td-judul">${a.judul}</div>
+              <div class="td-isi">${a.isi}</div>
+            </td>
+            <td>
+              <button onclick="editItem('${a.id}')" style="cursor:pointer; border:none; background:none; font-size:1.2rem;">✏️</button>
+              <button onclick="openDeleteModal('${a.id}')" style="cursor:pointer; border:none; background:none; font-size:1.2rem;">🗑️</button>
+            </td>
+          </tr>
+        `).join("");
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="2" style="color:red; text-align:center; padding:1rem;">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function submitForm() {
+      const judul = document.getElementById("inputJudul").value.trim();
+      const isi = document.getElementById("inputIsi").value.trim();
+      const editId = document.getElementById("editId").value;
+      const btn = document.getElementById("submitBtn");
+
+      if (!judul || !isi) return alert("Mohon isi judul dan konten!");
+
+      btn.disabled = true;
+      try {
+        if (editId) {
+          await updateDoc(doc(db, "pengumuman", editId), { judul, isi });
+        } else {
+          await addDoc(collection(db, "pengumuman"), { judul, isi, createdAt: serverTimestamp() });
+        }
+        resetForm();
+        loadList();
+        alert("Berhasil disimpan!");
+      } catch (err) { alert(err.message); }
+      finally { btn.disabled = false; }
+    }
+
+    function resetForm() {
+      document.getElementById("editId").value = "";
+      document.getElementById("inputJudul").value = "";
+      document.getElementById("inputIsi").value = "";
+      document.getElementById("formTitle").textContent = "➕ Tambah Pengumuman";
+      document.getElementById("submitBtn").textContent = "Simpan Data";
+      document.getElementById("cancelBtn").style.display = "none";
+    }
+
+    document.getElementById("confirmDelBtn").onclick = async () => {
+      try {
+        await deleteDoc(doc(db, "pengumuman", pendingId));
+        closeDeleteModal();
+        loadList();
+      } catch (err) { alert(err.message); }
+    };
+
+    loadList();
+  </script>
+</body>
+</html>

@@ -10,11 +10,11 @@ class AdminSidebar extends HTMLElement {
       { id: "anggota",      icon: "👥", label: "Data Anggota", href: "./kelola_user.html" },
       { id: "laporan",      icon: "📊", label: "Laporan",      href: "./laporan.html" },
       { id: "import",       icon: "📥", label: "Import Data", href: "./import.html" },
+      { id: "pengumuman",  icon: "📢", label: "Pengumuman",   href: "./pengumuman.html" },
     ];
 
     const settingItems = [
       { id: "pengaturan", icon: "⚙️", label: "Pengaturan", href: "./pengaturan.html" },
-      { id: "bantuan",    icon: "❓", label: "Bantuan",     href: "./bantuan.html" },
     ];
 
     const renderItems = (items) => items.map(item => `
@@ -355,8 +355,6 @@ class AdminSidebar extends HTMLElement {
           <div class="nav-group-label">Menu Utama</div>
           ${renderItems(menuItems)}
 
-          <div class="nav-group-label" style="margin-top:0.25rem;">Lainnya</div>
-          ${renderItems(settingItems)}
         </nav>
 
         <div class="divider"></div>

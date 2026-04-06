@@ -67,25 +67,6 @@
       display: flex; align-items: center; gap: 5px;
     }
 
-    .notif-btn {
-      width: 34px; height: 34px;
-      border-radius: 9px;
-      background: #f5f6fa;
-      border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.15s;
-      position: relative;
-    }
-    .notif-btn:hover { background: #eef2fe; border-color: #dde3f8; }
-    .notif-dot {
-      position: absolute; top: 5px; right: 5px;
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--red);
-      border: 1.5px solid white;
-    }
-
     /* ── MAIN ── */
     .main { padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.75rem; }
 
@@ -202,7 +183,22 @@
     .sb3 { background: #fffbeb; color: #f59e0b; }
     .sb4 { background: #fef2f2; color: #ef4444; }
 
-    .stat-val { font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin-bottom: 0.3rem; }
+    /* Skeleton loading */
+    .skeleton {
+      display: inline-block;
+      width: 70px; height: 2.1rem;
+      background: linear-gradient(90deg, #ececf5 25%, #f5f6fa 50%, #ececf5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s infinite;
+      border-radius: 8px;
+      vertical-align: middle;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .stat-val { font-size: 2.1rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; margin-bottom: 0.3rem; min-height: 2.1rem; }
     .sv1 { color: #4B7FF2; }
     .sv2 { color: #10b981; }
     .sv3 { color: #f59e0b; }
@@ -218,9 +214,11 @@
       display: flex; align-items: center; gap: 4px;
       padding-top: 0.65rem;
       border-top: 1px solid var(--border);
+      min-height: 1.5rem;
     }
     .trend-up   { color: #10b981; }
     .trend-down { color: #ef4444; }
+    .trend-neutral { color: var(--muted); }
 
     /* ── BOTTOM ROW ── */
     .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -251,8 +249,14 @@
       display: flex; align-items: center; gap: 0.85rem;
       padding: 0.7rem 1.5rem;
       transition: background 0.15s;
+      animation: fadeUp 0.3s ease both;
     }
     .activity-item:hover { background: #f9f9fb; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: none; }
+    }
 
     .act-icon {
       width: 34px; height: 34px; border-radius: 10px;
@@ -289,16 +293,24 @@
     .qa-label { font-size: 0.73rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.3; }
 
     /* ── ENTRY ANIMATIONS ── */
-    .welcome-banner { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both; }
-    .stat-card:nth-child(1) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
-    .stat-card:nth-child(2) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.10s both; }
-    .stat-card:nth-child(3) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
-    .stat-card:nth-child(4) { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.20s both; }
-    .panel         { animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
+    .welcome-banner { animation: fadeUp2 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+    .stat-card:nth-child(1) { animation: fadeUp2 0.4s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+    .stat-card:nth-child(2) { animation: fadeUp2 0.4s cubic-bezier(0.16,1,0.3,1) 0.10s both; }
+    .stat-card:nth-child(3) { animation: fadeUp2 0.4s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
+    .stat-card:nth-child(4) { animation: fadeUp2 0.4s cubic-bezier(0.16,1,0.3,1) 0.20s both; }
+    .panel         { animation: fadeUp2 0.4s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
 
-    @keyframes fadeUp {
+    @keyframes fadeUp2 {
       from { opacity: 0; transform: translateY(14px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── EMPTY ACTIVITY ── */
+    .act-empty {
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
     }
 
     @media (max-width: 1100px) {
@@ -347,36 +359,36 @@
             <div class="stat-icon si1">📚</div>
             <span class="stat-badge sb1">Total</span>
           </div>
-          <div class="stat-val sv1">2.840</div>
+          <div class="stat-val sv1" id="statBuku"><span class="skeleton"></span></div>
           <div class="stat-lbl">Koleksi Buku</div>
-          <div class="stat-trend"><span class="trend-up">↑ 12 buku</span> ditambahkan bulan ini</div>
+          <div class="stat-trend" id="trendBuku"><span class="skeleton" style="width:120px;height:0.8rem;"></span></div>
         </div>
         <div class="stat-card c2">
           <div class="stat-top">
             <div class="stat-icon si2">👥</div>
             <span class="stat-badge sb2">Aktif</span>
           </div>
-          <div class="stat-val sv2">480</div>
+          <div class="stat-val sv2" id="statAnggota"><span class="skeleton"></span></div>
           <div class="stat-lbl">Anggota Terdaftar</div>
-          <div class="stat-trend"><span class="trend-up">↑ 8 anggota</span> baru minggu ini</div>
+          <div class="stat-trend" id="trendAnggota"><span class="skeleton" style="width:120px;height:0.8rem;"></span></div>
         </div>
         <div class="stat-card c3">
           <div class="stat-top">
             <div class="stat-icon si3">📋</div>
             <span class="stat-badge sb3">Aktif</span>
           </div>
-          <div class="stat-val sv3">127</div>
+          <div class="stat-val sv3" id="statDipinjam"><span class="skeleton"></span></div>
           <div class="stat-lbl">Sedang Dipinjam</div>
-          <div class="stat-trend"><span class="trend-up">↑ 5 peminjaman</span> sejak kemarin</div>
+          <div class="stat-trend" id="trendDipinjam"><span class="skeleton" style="width:120px;height:0.8rem;"></span></div>
         </div>
         <div class="stat-card c4">
           <div class="stat-top">
             <div class="stat-icon si4">⚠️</div>
             <span class="stat-badge sb4">Terlambat</span>
           </div>
-          <div class="stat-val sv4">14</div>
+          <div class="stat-val sv4" id="statTerlambat"><span class="skeleton"></span></div>
           <div class="stat-lbl">Buku Jatuh Tempo</div>
-          <div class="stat-trend"><span class="trend-down">↑ 3 buku</span> baru jatuh tempo</div>
+          <div class="stat-trend" id="trendTerlambat"><span class="skeleton" style="width:120px;height:0.8rem;"></span></div>
         </div>
       </div>
 
@@ -386,50 +398,11 @@
         <!-- Aktivitas Terbaru -->
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title"><span>🕐</span> Aktivitas Terbaru</div>
+            <div class="panel-title"><span>🕐</span> Peminjaman Terbaru</div>
             <a href="./pinjaman.html" class="panel-link">Lihat semua →</a>
           </div>
-          <div class="activity-list">
-            <div class="activity-item">
-              <div class="act-icon" style="background:#eef3ff;">📖</div>
-              <div class="act-info">
-                <div class="act-name">Budi Santoso meminjam buku</div>
-                <div class="act-desc">Pemrograman Web — Kelas XI RPL</div>
-              </div>
-              <span class="act-time">2 mnt lalu</span>
-            </div>
-            <div class="activity-item">
-              <div class="act-icon" style="background:#ecfdf5;">↩️</div>
-              <div class="act-info">
-                <div class="act-name">Sari Dewi mengembalikan buku</div>
-                <div class="act-desc">Basis Data — Kelas XII TKJ</div>
-              </div>
-              <span class="act-time">18 mnt lalu</span>
-            </div>
-            <div class="activity-item">
-              <div class="act-icon" style="background:#fffbeb;">👤</div>
-              <div class="act-info">
-                <div class="act-name">Anggota baru terdaftar</div>
-                <div class="act-desc">Ahmad Rizki — Kelas X MM</div>
-              </div>
-              <span class="act-time">1 jam lalu</span>
-            </div>
-            <div class="activity-item">
-              <div class="act-icon" style="background:#fef2f2;">⚠️</div>
-              <div class="act-info">
-                <div class="act-name">Jatuh tempo terdeteksi</div>
-                <div class="act-desc">3 buku belum dikembalikan</div>
-              </div>
-              <span class="act-time">2 jam lalu</span>
-            </div>
-            <div class="activity-item">
-              <div class="act-icon" style="background:#eef3ff;">📚</div>
-              <div class="act-info">
-                <div class="act-name">Buku baru ditambahkan</div>
-                <div class="act-desc">Jaringan Komputer — 5 eksemplar</div>
-              </div>
-              <span class="act-time">3 jam lalu</span>
-            </div>
+          <div class="activity-list" id="activityList">
+            <div class="act-empty">Memuat aktivitas...</div>
           </div>
         </div>
 
@@ -439,17 +412,13 @@
             <div class="panel-title"><span>⚡</span> Aksi Cepat</div>
           </div>
           <div class="qa-grid">
-            <a href="./buku.html" class="qa-btn">
+            <a href="/admin/kelola_buku.html" class="qa-btn">
               <span class="qa-icon">📚</span>
               <span class="qa-label">Tambah Buku</span>
             </a>
-            <a href="./pinjaman.html" class="qa-btn">
+            <a href="/admin/laporan_peminjaman.html" class="qa-btn">
               <span class="qa-icon">📋</span>
-              <span class="qa-label">Catat Peminjaman</span>
-            </a>
-            <a href="./pengembalian.html" class="qa-btn">
-              <span class="qa-icon">↩️</span>
-              <span class="qa-label">Proses Pengembalian</span>
+              <span class="qa-label">Lihat Peminjaman</span>
             </a>
             <a href="./anggota.html" class="qa-btn">
               <span class="qa-icon">👥</span>
@@ -458,10 +427,6 @@
             <a href="./laporan.html" class="qa-btn">
               <span class="qa-icon">📊</span>
               <span class="qa-label">Lihat Laporan</span>
-            </a>
-            <a href="./pengaturan.html" class="qa-btn">
-              <span class="qa-icon">⚙️</span>
-              <span class="qa-label">Pengaturan</span>
             </a>
           </div>
         </div>
@@ -474,6 +439,197 @@
     document.getElementById("dateChip").textContent = new Date().toLocaleDateString("id-ID", {
       weekday: "short", day: "numeric", month: "long", year: "numeric"
     });
+  </script>
+
+  <script type="module">
+    import { db } from "/firebase.js";
+    import {
+      collection, getDocs, query, where, orderBy, limit, getCountFromServer, Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ── Helper ──
+    function fmt(n) {
+      return n.toLocaleString("id-ID");
+    }
+
+    function timeAgo(ts) {
+      if (!ts) return "—";
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diff < 60)   return `${diff} dtk lalu`;
+      if (diff < 3600) return `${Math.floor(diff/60)} mnt lalu`;
+      if (diff < 86400)return `${Math.floor(diff/3600)} jam lalu`;
+      return `${Math.floor(diff/86400)} hari lalu`;
+    }
+
+    // Awal bulan ini (untuk trend)
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const tsMonth = Timestamp.fromDate(startOfMonth);
+
+    // Awal minggu ini
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0,0,0,0);
+    const tsWeek = Timestamp.fromDate(startOfWeek);
+
+    // Kemarin
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    yesterday.setHours(0,0,0,0);
+    const tsYesterday = Timestamp.fromDate(yesterday);
+
+    async function loadStats() {
+      try {
+        // ── 1. Koleksi Buku ──
+        const snapBuku = await getCountFromServer(collection(db, "buku"));
+        const totalBuku = snapBuku.data().count;
+
+        const snapBukuBaru = await getCountFromServer(
+          query(collection(db, "buku"), where("created_at", ">=", tsMonth))
+        );
+        const bukuBaru = snapBukuBaru.data().count;
+
+        document.getElementById("statBuku").textContent = fmt(totalBuku);
+        document.getElementById("trendBuku").innerHTML =
+          `<span class="trend-up">↑ ${bukuBaru} buku</span>&nbsp;ditambahkan bulan ini`;
+
+      } catch (e) {
+        // Fallback: hitung manual jika getCountFromServer tidak tersedia
+        const snap = await getDocs(collection(db, "buku"));
+        document.getElementById("statBuku").textContent = fmt(snap.size);
+        document.getElementById("trendBuku").innerHTML =
+          `<span class="trend-neutral">Total keseluruhan</span>`;
+      }
+
+      try {
+        // ── 2. Anggota (siswa + guru) ──
+        const [snapSiswa, snapGuru] = await Promise.all([
+          getCountFromServer(collection(db, "siswa")),
+          getCountFromServer(collection(db, "guru"))
+        ]);
+        const totalAnggota = snapSiswa.data().count + snapGuru.data().count;
+
+        const snapSiswaBaru = await getCountFromServer(
+          query(collection(db, "siswa"), where("created_at", ">=", tsWeek))
+        );
+        const anggotaBaru = snapSiswaBaru.data().count;
+
+        document.getElementById("statAnggota").textContent = fmt(totalAnggota);
+        document.getElementById("trendAnggota").innerHTML =
+          `<span class="trend-up">↑ ${anggotaBaru} anggota</span>&nbsp;baru minggu ini`;
+
+      } catch (e) {
+        const [s1, s2] = await Promise.all([
+          getDocs(collection(db, "siswa")),
+          getDocs(collection(db, "guru"))
+        ]);
+        document.getElementById("statAnggota").textContent = fmt(s1.size + s2.size);
+        document.getElementById("trendAnggota").innerHTML =
+          `<span class="trend-neutral">Siswa + Guru</span>`;
+      }
+
+      try {
+        // ── 3. Sedang Dipinjam ──
+        const snapDipinjam = await getCountFromServer(
+          query(collection(db, "peminjaman"), where("status", "==", "dipinjam"))
+        );
+        const totalDipinjam = snapDipinjam.data().count;
+
+        const snapPinjamBaru = await getCountFromServer(
+          query(collection(db, "peminjaman"),
+            where("status", "==", "dipinjam"),
+            where("tgl_pinjam", ">=", tsYesterday)
+          )
+        );
+        const pinjamBaru = snapPinjamBaru.data().count;
+
+        document.getElementById("statDipinjam").textContent = fmt(totalDipinjam);
+        document.getElementById("trendDipinjam").innerHTML =
+          `<span class="trend-up">↑ ${pinjamBaru} peminjaman</span>&nbsp;sejak kemarin`;
+
+      } catch (e) {
+        const snap = await getDocs(
+          query(collection(db, "peminjaman"), where("status", "==", "dipinjam"))
+        );
+        document.getElementById("statDipinjam").textContent = fmt(snap.size);
+        document.getElementById("trendDipinjam").innerHTML =
+          `<span class="trend-neutral">Sedang berjalan</span>`;
+      }
+
+      try {
+        // ── 4. Jatuh Tempo / Terlambat ──
+        // Status dipinjam + tgl_kembali sudah lewat
+        const tsNow = Timestamp.fromDate(new Date());
+        const snapTerlambat = await getCountFromServer(
+          query(collection(db, "peminjaman"),
+            where("status", "==", "dipinjam"),
+            where("tgl_kembali", "<", tsNow)
+          )
+        );
+        const totalTerlambat = snapTerlambat.data().count;
+
+        document.getElementById("statTerlambat").textContent = fmt(totalTerlambat);
+        document.getElementById("trendTerlambat").innerHTML = totalTerlambat > 0
+          ? `<span class="trend-down">⚠️ Perlu segera ditindaklanjuti</span>`
+          : `<span class="trend-up">✅ Tidak ada keterlambatan</span>`;
+
+      } catch (e) {
+        const snap = await getDocs(
+          query(collection(db, "peminjaman"), where("status", "==", "dipinjam"))
+        );
+        const terlambat = snap.docs.filter(d => {
+          const tgl = d.data().tgl_kembali?.toDate?.() || new Date(d.data().tgl_kembali);
+          return tgl && tgl < new Date();
+        }).length;
+        document.getElementById("statTerlambat").textContent = fmt(terlambat);
+        document.getElementById("trendTerlambat").innerHTML = terlambat > 0
+          ? `<span class="trend-down">⚠️ Perlu ditindaklanjuti</span>`
+          : `<span class="trend-up">✅ Tidak ada keterlambatan</span>`;
+      }
+    }
+
+    async function loadActivity() {
+      try {
+        const snap = await getDocs(
+          query(collection(db, "peminjaman"), orderBy("tgl_pinjam", "desc"), limit(5))
+        );
+
+        if (snap.empty) {
+          document.getElementById("activityList").innerHTML =
+            `<div class="act-empty">Belum ada aktivitas peminjaman.</div>`;
+          return;
+        }
+
+        const html = snap.docs.map((doc, i) => {
+          const d = doc.data();
+          const isLate = d.status === "dipinjam" &&
+            d.tgl_kembali?.toDate?.() < new Date();
+          const icon   = d.status === "dikembalikan" ? "↩️" : isLate ? "⚠️" : "📖";
+          const iconBg = d.status === "dikembalikan" ? "#ecfdf5" : isLate ? "#fef2f2" : "#eef3ff";
+          const status = d.status === "dikembalikan" ? "Dikembalikan"
+                       : isLate ? "Terlambat" : "Dipinjam";
+          return `
+            <div class="activity-item" style="animation-delay:${i*0.06}s">
+              <div class="act-icon" style="background:${iconBg};">${icon}</div>
+              <div class="act-info">
+                <div class="act-name">${d.nama || "—"} — ${status}</div>
+                <div class="act-desc">${d.judul || "—"} · ${d.kelas || "—"}</div>
+              </div>
+              <span class="act-time">${timeAgo(d.tgl_pinjam)}</span>
+            </div>`;
+        }).join("");
+
+        document.getElementById("activityList").innerHTML = html;
+      } catch (e) {
+        console.error(e);
+        document.getElementById("activityList").innerHTML =
+          `<div class="act-empty">Gagal memuat aktivitas.</div>`;
+      }
+    }
+
+    // Jalankan keduanya paralel
+    Promise.all([loadStats(), loadActivity()]);
   </script>
 
 </body>
